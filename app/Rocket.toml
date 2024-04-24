@@ -1,0 +1,7 @@
+[default.databases.rusqlite]
+url = "file:rusqlite.db?cache=shared"
+# url = "file:rusqlite.db?mode=memory&cache=shared"
+
+[global]
+address = "0.0.0.0"
+port = 8000
