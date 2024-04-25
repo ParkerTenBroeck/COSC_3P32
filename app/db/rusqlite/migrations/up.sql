@@ -30,9 +30,17 @@ CREATE TABLE messages (
     posted BIGINT NOT NULL,
     last_edited BIGINT,
 
-    private_message_id INTEGER NULL REFERENCES private_messages(message_id) ON DELETE CASCADE
-    channel_message_id INTEGER NULL REFERENCES private_messages(message_id) ON DELETE CASCADE
-    group_message_id INTEGER NULL REFERENCES private_messages(message_id) ON DELETE CASCADE
+    private_message_id INTEGER NULL REFERENCES private_messages(message_id) ON DELETE CASCADE,
+    channel_message_id INTEGER NULL REFERENCES private_messages(message_id) ON DELETE CASCADE,
+    group_message_id INTEGER NULL REFERENCES private_messages(message_id) ON DELETE CASCADE,
+    
+    CONSTRAINT SingleKind 
+        CHECK (
+            (private_message_id IS NOT NULL) 
+            + (channel_message_id IS NOT NULL) 
+            + (group_message_id IS NOT NULL) <= 1
+            )
+
 );
 
 CREATE TABLE private_messages (
