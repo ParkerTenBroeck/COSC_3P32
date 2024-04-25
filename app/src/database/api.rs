@@ -357,8 +357,8 @@ mod messages {
         Ok(val.into())
     }
 
-    #[post("/create_channel")]
-    async fn create_channel(db: Db, user: user::UserId) -> Result<Json<i64>> {
+    #[post("/create_channel", data = "<group>")]
+    async fn create_channel(db: Db, user: user::UserId, group: Json<CreateGroup>) -> Result<Json<i64>> {
         let val = db
             .run(move |db| {
                 let tran = db.transaction()?;
@@ -366,9 +366,9 @@ mod messages {
                 let chat_id = tran.query_row(
                     "
             INSERT INTO chats
-                (primary_owner, secondary_owner, sending_privilage, track_views, max_members)
+                (primary_owner, secondary_owner, sending_privilage, track_views, max_members, chat_name)
             SELECT
-                ?1, ?2, 128, TRUE, 18446744073709551615
+                ?1, ?2, 128, TRUE, 18446744073709551615, ?2
             WHERE 100>(
                 SELECT COUNT(*) FROM 
                     (SELECT chat_id FROM chats WHERE secondary_owner IS NULL) t1
@@ -376,8 +376,9 @@ mod messages {
                     chat_members
                 ON (t1.chat_id=chat_members.chat_id)
                 WHERE member_id=?1
-            )RETURNING chat_id",
-                    params![user.0],
+            )
+            RETURNING chat_id",
+                    params![user.0, group.name],
                     |row| Ok(row.get(0)?),
                 )?;
 
@@ -406,7 +407,65 @@ mod messages {
 
     #[post("/join_chat", data = "<chat>")]
     async fn join_chat(db: Db, user: user::UserId, chat: Json<ChatId>) -> Result<Status> {
-        todo!()
+        let affected = db.0.run(move |db|{
+            Result::<_, rusqlite::Error>::Ok(db.execute("
+            INSERT INTO chat_members
+                (chat_id, member_id, privilage)
+            SELECT
+                ?1, ?2, 0
+            WHERE 
+            100>(
+                SELECT COUNT(*) FROM 
+                    (SELECT chat_id FROM chats WHERE secondary_owner IS NULL) t1
+                LEFT JOIN
+                    chat_members
+                ON (t1.chat_id=chat_members.chat_id)
+                WHERE member_id=?1
+            ) AND
+            (
+                (SELECT SUM(max_members) FROM chats WHERE chat_id=?1)
+                > 
+                (SELECT COUNT(*) FROM chat_members WHERE chat_id=?1)
+            )
+            ", params![chat.chat_id, user.0])?)
+        }).await?;
+
+        match affected{
+            1 => Ok(Status::Accepted),
+            _ => Ok(Status::NotAcceptable)
+        }
+    }
+
+    #[post("/leave_chat", data = "<chat>")]
+    async fn leave_chat(db: Db, user: user::UserId, chat: Json<ChatId>) -> Result<Status>{
+
+        let num = db.run(move |db|{
+            db.execute("
+            DELETE FROM chat_members
+                WHERE 
+            chat_id=?1 AND member_id=?2 
+            AND IFNULL(?2 NOT IN(
+                SELECT 
+                    primary_owner 
+                FROM 
+                    chats 
+                WHERE 
+                    chats.chat_id=?1
+            ), TRUE)
+            AND IFNULL(?2 NOT IN(
+                SELECT 
+                    secondary_owner 
+                FROM 
+                    chats 
+                WHERE 
+                    chats.chat_id=?1
+            ), TRUE)", params![chat.chat_id, user.0])
+        }).await?;
+
+        match num{
+            1 => Ok(Status::Ok),
+            _ => Ok(Status::NotAcceptable)
+        }
     }
 
     #[delete("/delete_chat", data = "<chat>")]
@@ -564,7 +623,8 @@ mod messages {
             create_channel,
             create_group,
             join_chat,
-            delete_chat
+            delete_chat,
+            leave_chat
         ]
     }
 }

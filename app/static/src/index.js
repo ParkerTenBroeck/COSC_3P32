@@ -259,6 +259,52 @@ async function create_group(name){
     return await resp.json();
 }
 
+async function create_channel(name){
+    const resp = await fetch("/database/create_channel", {
+        credentials: "same-origin",
+        mode: "same-origin",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({name: name})
+    });
+
+    if (!resp.ok) {
+        console.log("Status: " + resp.status)
+        return Promise.reject("server")
+    }
+    return await resp.json();
+}
+
+
+async function join_chat(chat_id){
+    const resp = await fetch("/database/join_chat", {
+        credentials: "same-origin",
+        mode: "same-origin",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({chat_id: chat_id})
+    });
+
+    if (!resp.ok) {
+        console.log("Status: " + resp.status)
+        return Promise.reject("server")
+    }
+}
+
+async function leave_chat(chat_id){
+    const resp = await fetch("/database/leave_chat", {
+        credentials: "same-origin",
+        mode: "same-origin",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({chat_id: chat_id})
+    });
+
+    if (!resp.ok) {
+        console.log("Status: " + resp.status)
+        return Promise.reject("server")
+    }
+}
 
 async function test(){
     const uid1 = await create_user({name: "ivy", email: "ivy", location: "ivy", password: "ivy", phone_number: "123", username: "ivy", location: "ivy"});
@@ -277,4 +323,9 @@ async function test(){
     await login("parker", "parker");
     const group_id = await create_group("BRUH!");
     await send_message("asdlfjhasdlkfgjhsad", group_id);
+
+    console.log(group_id);
+    await login("ivy", "ivy");
+    await join_chat(group_id);
+    await send_message("hiiii!", group_id);
 }
