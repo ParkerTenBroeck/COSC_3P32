@@ -101,26 +101,24 @@ pub mod user {
         db: Db,
         create_user: Json<CreateUser>,
     ) -> Result<std::result::Result<Created<Json<i64>>, Status>> {
-        if create_user.email.is_empty()
-            | create_user.name.is_empty()
-            | create_user.password.is_empty()
-            | create_user.phone_number.is_empty()
-            | create_user.username.is_empty()
-            | create_user.location.is_empty()
-        {
-            return Ok(Err(Status::BadRequest));
-        }
+        // if create_user.email.is_empty()
+        //     | create_user.name.is_empty()
+        //     | create_user.password.is_empty()
+        //     | create_user.phone_number.is_empty()
+        //     | create_user.username.is_empty()
+        //     | create_user.location.is_empty()
+        // {
+        //     return Ok(Err(Status::BadRequest));
+        // }
         let id = db
             .run(move |conn| {
                 conn.query_row(
                     "
                 INSERT INTO users 
                     (phone_number, name, email, location, username, password, availability) 
-                        SELECT 
-                    ?1, ?2, ?3, ?4, ?5, ?6, ?7 
-                WHERE NOT EXISTS (
-                    SELECT 1 FROM users WHERE email =?3 OR phone_number =?1
-                ) RETURNING user_id",
+                VALUES 
+                    (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+                RETURNING user_id",
                     params![
                         create_user.phone_number,
                         create_user.name,
