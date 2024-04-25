@@ -213,12 +213,13 @@ async function send_message(message, chat_id){
     return await resp.json();
 }
 
-async function update_message(message, mid){
+async function update_message(message, message_id){
     const resp = await fetch("/database/update_message", {
         credentials: "same-origin",
         mode: "same-origin",
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({message: message, message_id: message_id})
     });
 
     if (!resp.ok) {

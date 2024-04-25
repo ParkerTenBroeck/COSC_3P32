@@ -394,7 +394,7 @@ mod messages {
             Result::<_, rusqlite::Error>::Ok(db.execute("
             DELETE FROM chats
                 WHERE
-                chat_id = ?2 AND (primary_owner=?1 OR ISNULL(secondary_owner=?1, FALSE))
+                chat_id = ?2 AND (primary_owner=?1 OR IFNULL(secondary_owner=?1, FALSE))
             ", params![user.0, chat.chat_id])?)
         }).await?;
 
@@ -432,10 +432,8 @@ mod messages {
                     "
                     INSERT INTO messages 
                         (sender_id, chat_id, message, attachment, posted) 
-                    SELECT 
-                        (?2, ?1, ?3, ?4, ?5) 
-                    WHERE EXISTS 
-                        (SELECT 1 FROM chat_members WHERE chat_id=?1 AND member_id=?2)
+                    VALUES 
+                        (?2, ?1, ?3, ?4, ?5)
                     RETURNING message_id",
                     params![
                         message.chat_id,
@@ -509,7 +507,7 @@ mod messages {
                     "
                 UPDATE messages
                 SET message = ?3, last_edited=?4
-                WHERE message_id=?1 owner_id=?2",
+                WHERE message_id=?1 AND sender_id=?2",
                     params![
                         message.message_id,
                         user.0,
