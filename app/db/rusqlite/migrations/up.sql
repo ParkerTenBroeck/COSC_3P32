@@ -14,7 +14,6 @@ CREATE TABLE users (
     password VARCHAR(50) NOT NULL CHECK(length(name) >= 3),
     bio VARCHAR(250) NOT NULL DEFAULT "",
     availability TINYINT NOT NULL,
-    pchat_cap INTEGER NOT NULL DEFAULT 100,
     pfp_file_id INTEGER REFERENCES files(file_id)
 );
 

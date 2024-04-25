@@ -327,13 +327,13 @@ mod messages {
                 (primary_owner, sending_privilage, track_views, max_members, chat_name)
             SELECT
                 ?1, 0, FALSE, 2000, ?2
-            WHERE pchat_cap>(
+            WHERE 100>(
                 SELECT COUNT(*) FROM 
-                (LEFT JOIN
-                    (SELECT chats WHERE secondary_owner IS NOT NULL)
+                    (SELECT chat_id FROM chats WHERE secondary_owner IS NULL) t1
+                LEFT JOIN
                     chat_members
-                    ON (chats.chat_id=chat_members.chat_id)
-                )WHERE member_id=?1
+                ON (t1.chat_id=chat_members.chat_id)
+                WHERE member_id=?1
             )
             RETURNING chat_id",
                     params![user.0, group.name],
@@ -367,9 +367,16 @@ mod messages {
                     "
             INSERT INTO chats
                 (primary_owner, secondary_owner, sending_privilage, track_views, max_members)
-            VALUES
-                (?1, ?2, 128, TRUE, 18446744073709551615)
-            RETURNING chat_id",
+            SELECT
+                ?1, ?2, 128, TRUE, 18446744073709551615
+            WHERE 100>(
+                SELECT COUNT(*) FROM 
+                    (SELECT chat_id FROM chats WHERE secondary_owner IS NULL) t1
+                LEFT JOIN
+                    chat_members
+                ON (t1.chat_id=chat_members.chat_id)
+                WHERE member_id=?1
+            )RETURNING chat_id",
                     params![user.0],
                     |row| Ok(row.get(0)?),
                 )?;

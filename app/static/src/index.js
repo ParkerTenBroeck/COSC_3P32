@@ -272,9 +272,9 @@ async function test(){
     const mid = await send_message("byr", dm_id);
     await update_message("bye", mid);
 
-    await delete_chat(dm_id);
+    // await delete_chat(dm_id);
 
     await login("parker", "parker");
-    const group_id = create_group("BRUH!");
+    const group_id = await create_group("BRUH!");
     await send_message("asdlfjhasdlkfgjhsad", group_id);
 }
