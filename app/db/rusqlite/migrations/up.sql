@@ -10,11 +10,12 @@ CREATE TABLE users (
     name VARCHAR(150) NOT NULL CHECK(length(name) >= 3),
     email VARCHAR(150) NOT NULL CHECK(length(name) >= 3) UNIQUE,
     location VARCHAR(150) NOT NULL CHECK(length(name) >= 3),
-    username VARCHAR(50) NOT NULL CHECK(length(name) >= 3) UNIQUE,
+    username VARCHAR(50) NULL CHECK(length(name) >= 3) UNIQUE,
     password VARCHAR(50) NOT NULL CHECK(length(name) >= 3),
     bio VARCHAR(250) NOT NULL DEFAULT "",
     availability TINYINT NOT NULL,
-    php_file_id INTEGER REFERENCES files(file_id)
+    pchat_cap INTEGER NOT NULL DEFAULT 100,
+    pfp_file_id INTEGER REFERENCES files(file_id)
 );
 
 CREATE TABLE contacts (

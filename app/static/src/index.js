@@ -243,6 +243,22 @@ async function delete_chat(chat_id){
     }
 }
 
+async function create_group(name){
+    const resp = await fetch("/database/create_group", {
+        credentials: "same-origin",
+        mode: "same-origin",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({name: name})
+    });
+
+    if (!resp.ok) {
+        console.log("Status: " + resp.status)
+        return Promise.reject("server")
+    }
+    return await resp.json();
+}
+
 
 async function test(){
     const uid1 = await create_user({name: "ivy", email: "ivy", location: "ivy", password: "ivy", phone_number: "123", username: "ivy", location: "ivy"});
@@ -257,4 +273,8 @@ async function test(){
     await update_message("bye", mid);
 
     await delete_chat(dm_id);
+
+    await login("parker", "parker");
+    const group_id = create_group("BRUH!");
+    await send_message("asdlfjhasdlkfgjhsad", group_id);
 }

@@ -309,8 +309,14 @@ mod messages {
         Ok(val.into())
     }
 
-    #[post("/create_group")]
-    async fn create_group(db: Db, user: user::UserId) -> Result<Json<i64>> {
+    #[derive(Debug, Clone, Deserialize, Serialize)]
+    #[serde(crate = "rocket::serde")]
+    struct CreateGroup {
+        name: Option<String>,
+    }
+
+    #[post("/create_group", data = "<group>")]
+    async fn create_group(db: Db, user: user::UserId, group: Json<CreateGroup>) -> Result<Json<i64>> {
         let val = db
             .run(move |db| {
                 let tran = db.transaction()?;
@@ -318,11 +324,19 @@ mod messages {
                 let chat_id = tran.query_row(
                     "
             INSERT INTO chats
-                (primary_owner, secondary_owner, sending_privilage, track_views, max_members)
-            VALUES
-                (?1, ?2, 0, FALSE, 2000)
+                (primary_owner, sending_privilage, track_views, max_members, chat_name)
+            SELECT
+                ?1, 0, FALSE, 2000, ?2
+            WHERE pchat_cap>(
+                SELECT COUNT(*) FROM 
+                (LEFT JOIN
+                    (SELECT chats WHERE secondary_owner IS NOT NULL)
+                    chat_members
+                    ON (chats.chat_id=chat_members.chat_id)
+                )WHERE member_id=?1
+            )
             RETURNING chat_id",
-                    params![user.0],
+                    params![user.0, group.name],
                     |row| Ok(row.get(0)?),
                 )?;
 
@@ -427,7 +441,7 @@ mod messages {
         let mid = db
             .run(move |db| {
                 let tran = db.transaction()?;
-                // tran.query_row(sql, params, f)
+                
                 let mid: i64 = tran.query_row(
                     "
                     INSERT INTO messages 
