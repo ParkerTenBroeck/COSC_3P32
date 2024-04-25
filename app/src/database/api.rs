@@ -276,16 +276,18 @@ mod messages{
             // tran.query_row(sql, params, f)
             let mid: i64 = tran.query_row("
                 INSERT INTO messages 
-                    (owner_id, message, attachment, posted) 
+                    (message, attachment, posted) 
                 VALUES 
-                    (?1, ?2, ?3, ?4) 
+                    (?1, ?2, ?3) 
                 RETURNING message_id", 
-                params![user.0, message.message, message.attachment, since_the_epoch as i64], |row|{
+                params![message.message, message.attachment, since_the_epoch as i64], |row|{
                     row.get(0)
             })?;
 
             tran.execute("
                 INSERT INTO private_messages (from_id, to_id, message_id) VALUES (?1, ?2, ?3)", params![user.0, message.to, mid])?;
+            
+            tran.execute("UPDATE messages SET private_message_id=?1 WHERE message_id=?1", params![mid])?;
             
             tran.commit()?;
             Result::<_, rusqlite::Error>::Ok(mid)
@@ -307,7 +309,7 @@ mod messages{
         .run(move |conn| {
             conn.execute("
             DELETE FROM messages 
-            WHERE message_id=?1 owner_id=?2", params![message_id.message_id, user.0])
+            WHERE message_id=?1 AND owner_id=?2", params![message_id.message_id, user.0])
         })
         .await?;
 

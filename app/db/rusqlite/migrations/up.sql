@@ -24,12 +24,15 @@ CREATE TABLE contacts (
 );
 
 CREATE TABLE messages (
-    message_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT REFERENCES private_messages(message_id) ON DELETE CASCADE,
-    owner_id INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
+    message_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     message TEXT,
     attachment INTEGER REFERENCES files(file_id),
     posted BIGINT NOT NULL,
-    last_edited BIGINT
+    last_edited BIGINT,
+
+    private_message_id INTEGER NULL REFERENCES private_messages(message_id) ON DELETE CASCADE
+    channel_message_id INTEGER NULL REFERENCES private_messages(message_id) ON DELETE CASCADE
+    group_message_id INTEGER NULL REFERENCES private_messages(message_id) ON DELETE CASCADE
 );
 
 CREATE TABLE private_messages (
@@ -53,6 +56,7 @@ CREATE TABLE channel_memebers (
 );
 
 create TABLE channel_messages (
+    from_id INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
     message_id INTEGER REFERENCES messages(message_id) ON DELETE CASCADE,
     channel_id INTEGER REFERENCES channels(channel_id) ON DELETE CASCADE,
     views INTEGER NOT NULL,
@@ -73,6 +77,7 @@ CREATE TABLE group_memebers (
 );
 
 create TABLE group_messages (
+    from_id INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
     message_id INTEGER REFERENCES messages(message_id) ON DELETE CASCADE,
     group_id INTEGER REFERENCES groups(group_id) ON DELETE CASCADE,
     PRIMARY KEY(message_id)

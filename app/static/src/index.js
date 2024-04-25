@@ -194,12 +194,11 @@ async function private_message(message, to){
         console.log("Status: " + resp.status)
         return Promise.reject("server")
     }
-
-    window.location.href = 'login.html'; // Redirect to login page
+    return await resp.json();
 }
 
-async function delete_account(){
-    const resp = await fetch("/database/delete_account", {
+async function update_message(message, mid){
+    const resp = await fetch("/database/update_message", {
         credentials: "same-origin",
         mode: "same-origin",
         method: "DELETE",
@@ -210,6 +209,12 @@ async function delete_account(){
         console.log("Status: " + resp.status)
         return Promise.reject("server")
     }
+}
 
-    window.location.href = 'login.html'; // Redirect to login page
+
+async function test(){
+    await create_user({name: "ivy", email: "ivy", location: "ivy", password: "ivy", phone_number: "123", username: "ivy", location: "ivy"});
+    await create_user({name: "parker", email: "parker", location: "parker", password: "parker", phone_number: "1233", username: "parker", location: "parker"});
+    await login("parker", "parker");
+    await private_message("hello!", 1);
 }
