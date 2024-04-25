@@ -66,7 +66,7 @@ async function create_user(user) {
         throw new Error('Network response was not ok');
     }
 
-    return "Created";
+    return await resp.json();
 }
 
 async function add_contact(user_id, contact_id) {
@@ -181,13 +181,29 @@ async function delete_message(message_id){
     return "Sucsess"
 }
 
-async function private_message(message, to){
-    const resp = await fetch("/database/private_message", {
+async function create_dm(to){
+    const resp = await fetch("/database/create_dm", {
         credentials: "same-origin",
         mode: "same-origin",
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({message: message, to: to})
+        body: JSON.stringify({other: to})
+    });
+
+    if (!resp.ok) {
+        console.log("Status: " + resp.status)
+        return Promise.reject("server")
+    }
+    return await resp.json();
+}
+
+async function send_message(message, chat_id){
+    const resp = await fetch("/database/send_message", {
+        credentials: "same-origin",
+        mode: "same-origin",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({message: message, chat_id: chat_id})
     });
 
     if (!resp.ok) {
@@ -201,8 +217,23 @@ async function update_message(message, mid){
     const resp = await fetch("/database/update_message", {
         credentials: "same-origin",
         mode: "same-origin",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+    });
+
+    if (!resp.ok) {
+        console.log("Status: " + resp.status)
+        return Promise.reject("server")
+    }
+}
+
+async function delete_chat(chat_id){
+    const resp = await fetch("/database/delete_chat", {
+        credentials: "same-origin",
+        mode: "same-origin",
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({chat_id: chat_id})
     });
 
     if (!resp.ok) {
@@ -213,8 +244,16 @@ async function update_message(message, mid){
 
 
 async function test(){
-    await create_user({name: "ivy", email: "ivy", location: "ivy", password: "ivy", phone_number: "123", username: "ivy", location: "ivy"});
-    await create_user({name: "parker", email: "parker", location: "parker", password: "parker", phone_number: "1233", username: "parker", location: "parker"});
+    const uid1 = await create_user({name: "ivy", email: "ivy", location: "ivy", password: "ivy", phone_number: "123", username: "ivy", location: "ivy"});
+    const uid2 = await create_user({name: "parker", email: "parker", location: "parker", password: "parker", phone_number: "1233", username: "parker", location: "parker"});
     await login("parker", "parker");
-    await private_message("hello!", 1);
+    let dm_id = await create_dm(uid1);
+    await send_message("hello!", dm_id);
+
+    await login("ivy", "ivy");
+    await send_message("hiiii!", dm_id);
+    const mid = await send_message("byr", dm_id);
+    await update_message("bye", mid);
+
+    await delete_chat(dm_id);
 }
