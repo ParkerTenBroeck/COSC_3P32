@@ -432,9 +432,12 @@ mod messages {
                     "
                     INSERT INTO messages 
                         (sender_id, chat_id, message, attachment, posted) 
-                    VALUES 
-                        (?2, ?1, ?3, ?4, ?5)
-                    RETURNING message_id",
+                    SELECT 
+                        ?2, ?1, ?3, ?4, ?5
+                    WHERE 1=(
+                        SELECT COUNT(*) FROM chat_members WHERE chat_id=?1 AND member_id=?2 
+                        AND 1=(SELECT COUNT(*) FROM chats WHERE chat_id=?1 AND sending_privilage<=privilage) 
+                    ) RETURNING message_id",
                     params![
                         message.chat_id,
                         user.0,
