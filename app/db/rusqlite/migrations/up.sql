@@ -6,13 +6,13 @@ CREATE TABLE files (
 
 CREATE TABLE users (
     user_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    phone_number VARCHAR(15) NOT NULL,
-    name VARCHAR(150) NOT NULL,
-    email VARCHAR(150) NOT NULL,
-    location VARCHAR(150) NOT NULL,
-    username VARCHAR(50) NOT NULL,
-    password VARCHAR(50) NOT NULL,
-    bio VARCHAR(250),
+    phone_number VARCHAR(15) NOT NULL CHECK(length(name) > 5),
+    name VARCHAR(150) NOT NULL CHECK(length(name) > 3),
+    email VARCHAR(150) NOT NULL CHECK(length(name) > 5),
+    location VARCHAR(150) NOT NULL CHECK(length(name) > 5),
+    username VARCHAR(50) NOT NULL CHECK(length(name) > 5),
+    password VARCHAR(50) NOT NULL CHECK(length(name) > 5),
+    bio VARCHAR(250) NOT NULL DEFAULT "",
     availability TINYINT NOT NULL,
     php_file_id INTEGER REFERENCES files(file_id)
 );
@@ -26,7 +26,7 @@ CREATE TABLE contacts (
 CREATE TABLE messages (
     message_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     message TEXT,
-    attachment INTEGER REFERENCES files(file_id),
+    attachment INTEGER NULL REFERENCES files(file_id),
     posted BIGINT NOT NULL,
     last_edited BIGINT,
 
@@ -40,7 +40,6 @@ CREATE TABLE messages (
             + (channel_message_id IS NOT NULL) 
             + (group_message_id IS NOT NULL) <= 1
             )
-
 );
 
 CREATE TABLE private_messages (
