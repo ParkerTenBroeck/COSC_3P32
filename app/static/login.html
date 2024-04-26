@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="/images/favicon.svg">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>User Login</title>
 </head>
 <body>
@@ -20,7 +21,10 @@
     <button type="button" onclick="submitForm()">Login</button>
   </form>
 
-  <script src="src/index.js"></script>
+  <script type="module">
+    import * as api from "/src/index.js";
+    window.api = api;
+  </script>
   <script>
     async function submitForm() {
       const form = document.getElementById('loginForm');
@@ -30,7 +34,7 @@
         jsonData[key] = value;
       });
 
-      const auth = await login(jsonData.email, jsonData.password);
+      const auth = await api.users.login(jsonData.email, jsonData.password);
 
       if (auth == "Failed"){
         alert("Failed to login, Wrong Email/Password");

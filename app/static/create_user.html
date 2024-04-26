@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="/images/favicon.svg">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>User Registration Form</title>
 </head>
 <body>
@@ -33,7 +34,10 @@
     <button type="button" onclick="submitForm()">Submit</button>
   </form>
 
-  <script src="src/index.js"></script>
+  <script type="module">
+    import * as api from "/src/index.js";
+    window.api = api;
+  </script>
   <script>
     async function submitForm() {
       const form = document.getElementById('userForm');
@@ -43,7 +47,7 @@
         jsonData[key] = value;
       });
 
-      const resp = await create_user(jsonData);
+      const resp = await api.users.create_user(jsonData);
       if (resp == "Conflict"){
         alert("Email or Phone Number already exists!");
       }else{

@@ -1,28 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="/images/favicon.svg">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>User Profile</title>
 </head>
 <body>
   <h2>User Profile</h2>
 
 
-  <button type="button" onclick="logout()">Logout</button>
-  <button type="button" onclick="delete_account()">Delete Account</button>
+  <button type="button" onclick="api.users.logout()">Logout</button>
+  <button type="button" onclick="api.users.delete_account()">Delete Account</button>
 
   <div id="userInfo">
     <p>Loading user information...</p>
   </div>
 
-  <script src="src/index.js"></script>
+  <script type="module">
+    import * as api from "/src/index.js";
+    window.api = api;
+  </script>
   <script>
 
     // Check if user is logged in
     async function checkUserLoggedIn() {
         try {
-            const userData = await who_am_i();
+            const userData = await api.users.who_am_i();
             if(userData == null){
             // Handle error, e.g., redirect to login page or display error message
             console.error('Error fetching user information:', error);
@@ -52,9 +56,12 @@
         <p>Profile Picture File ID: ${userData.pfp_file_id}</p>
       `;
     }
+    document.addEventListener("DOMContentLoaded", function(event){
+      // Call function to check if user is logged in and fetch user info
+      checkUserLoggedIn();
+    });
 
-    // Call function to check if user is logged in and fetch user info
-    checkUserLoggedIn();
+
   </script>
 </body>
 </html>
