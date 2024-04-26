@@ -337,6 +337,51 @@ async function list_chat_members(chat_id){
     return await resp.json();
 }
 
+async function update_chat_notifications(chat_id, notifications){
+    const resp = await fetch("/database/update_chat_notifications", {
+        credentials: "same-origin",
+        mode: "same-origin",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({chat_id: chat_id, notifications:notifications})
+    });
+
+    if (!resp.ok) {
+        console.log("Status: " + resp.status)
+        return {}
+    }
+}
+
+async function mark_chat_read(chat_id){
+    const resp = await fetch("/database/mark_chat_read", {
+        credentials: "same-origin",
+        mode: "same-origin",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({chat_id: chat_id})
+    });
+
+    if (!resp.ok) {
+        console.log("Status: " + resp.status)
+        return {}
+    }
+}
+
+async function view_message(message_id){
+    const resp = await fetch("/database/view_message", {
+        credentials: "same-origin",
+        mode: "same-origin",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({message_id: message_id})
+    });
+
+    if (!resp.ok) {
+        console.log("Status: " + resp.status)
+        return {}
+    }
+}
+
 async function test(){
     const uid1 = await create_user({name: "ivy", email: "ivy", location: "ivy", password: "ivy", phone_number: "123", username: "ivy", location: "ivy"});
     const uid2 = await create_user({name: "parker", email: "parker", location: "parker", password: "parker", phone_number: "1233", username: "parker", location: "parker"});

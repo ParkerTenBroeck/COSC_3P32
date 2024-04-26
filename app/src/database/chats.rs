@@ -1,3 +1,5 @@
+use std::time::SystemTime;
+
 use crate::database::Db;
 use rocket::serde::{json::Json, Deserialize, Serialize};
 use rocket::{get, post, routes};
@@ -336,6 +338,62 @@ async fn list_chat_members(
         .into())
 }
 
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
+#[serde(crate = "rocket::serde")]
+struct UpdateChatNotif {
+    chat_id: i64,
+    notifications: bool,
+}
+
+#[post("/update_chat_notifications", data = "<update>")]
+async fn update_chat_notifications(
+    db: Db,
+    user: users::UserId,
+    update: Json<UpdateChatNotif>,
+) -> Result<Status> {
+    let updated = db
+        .run(move |db| {
+            db.execute(
+                "
+                UPDATE chat_members
+                SET wants_notifications=?3
+                WHERE chat_id=?2 AND member_id=?1
+            ",
+                params![user.0, update.chat_id, update.notifications],
+            )
+        })
+        .await?;
+    match updated {
+        1 => Ok(Status::Accepted),
+        _ => Ok(Status::NotAcceptable),
+    }
+}
+
+#[post("/mark_chat_read", data = "<update>")]
+async fn mark_chat_read(db: Db, user: users::UserId, update: Json<ChatId>) -> Result<Status> {
+    let since_the_epoch = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_secs();
+
+    let updated = db
+        .run(move |db| {
+            db.execute(
+                "
+                UPDATE chat_members
+                SET last_seen=?3
+                WHERE chat_id=?2 AND member_id=?1
+            ",
+                params![user.0, update.chat_id, since_the_epoch as i64],
+            )
+        })
+        .await?;
+    match updated {
+        1 => Ok(Status::Accepted),
+        _ => Ok(Status::NotAcceptable),
+    }
+}
+
 pub fn routes() -> Vec<rocket::Route> {
     routes![
         create_dm,
@@ -346,6 +404,8 @@ pub fn routes() -> Vec<rocket::Route> {
         leave_chat,
         update_chat_member_perm,
         list_chats,
-        list_chat_members
+        list_chat_members,
+        update_chat_notifications,
+        mark_chat_read
     ]
 }

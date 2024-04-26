@@ -15,6 +15,7 @@ use super::*;
 #[serde(crate = "rocket::serde")]
 pub(super) struct SendMessage {
     message: String,
+    reply: Option<i64>,
     attachment: Option<i64>,
     chat_id: i64,
 }
@@ -37,19 +38,23 @@ async fn send_message(
             let mid: i64 = tran.query_row(
                 "
                 INSERT INTO messages 
-                    (sender_id, chat_id, message, attachment, posted) 
+                    (sender_id, chat_id, message, attachment, posted, reply_to) 
                 SELECT 
-                    ?2, ?1, ?3, ?4, ?5
+                    ?2, ?1, ?3, ?4, ?5, ?6
                 WHERE 1=(
                     SELECT COUNT(*) FROM chat_members WHERE chat_id=?1 AND member_id=?2 
                     AND 1=(SELECT COUNT(*) FROM chats WHERE chat_id=?1 AND sending_privilage<=privilage) 
-                ) RETURNING message_id",
+                ) AND IFNULL(?1=(
+                    SELECT chat_id FROM messages WHERE reply_to=?6
+                ), TRUE)
+                RETURNING message_id",
                 params![
                     message.chat_id,
                     user.0,
                     message.message,
                     message.attachment,
-                    since_the_epoch as i64
+                    since_the_epoch as i64,
+                    message.reply,
                 ],
                 |row| row.get(0),
             )?;
@@ -63,7 +68,7 @@ async fn send_message(
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
-pub(super) struct DeleteMessage {
+pub(super) struct MessageId {
     message_id: i64,
 }
 
@@ -71,7 +76,7 @@ pub(super) struct DeleteMessage {
 async fn delete_message(
     db: Db,
     user: users::UserId,
-    message_id: Json<DeleteMessage>,
+    message_id: Json<MessageId>,
 ) -> Result<Status> {
     let affected = db
         .run(move |conn| {
@@ -140,6 +145,26 @@ async fn update_message(
     }
 }
 
+#[post("/view_message", data = "<update>")]
+async fn view_message(db: Db, _user: users::UserId, update: Json<MessageId>) -> Result<Status> {
+    let updated = db
+        .run(move |db| {
+            db.execute(
+                "
+                UPDATE messages
+                SET views=views+1
+                WHERE message_id=?2
+            ",
+                params![update.message_id],
+            )
+        })
+        .await?;
+    match updated {
+        1 => Ok(Status::Accepted),
+        _ => Ok(Status::NotAcceptable),
+    }
+}
+
 pub fn routes() -> Vec<rocket::Route> {
-    routes![send_message, delete_message, update_message]
+    routes![send_message, delete_message, update_message, view_message]
 }
