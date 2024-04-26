@@ -111,9 +111,9 @@ async fn create_channel(
                 let chat_id = tran.query_row(
                     "
             INSERT INTO chats
-                (primary_owner, secondary_owner, sending_privilage, track_views, max_members, chat_name)
+                (primary_owner, sending_privilage, track_views, max_members, chat_name)
             SELECT
-                ?1, ?2, 128, TRUE, 18446744073709551615, ?2
+                ?1, 128, TRUE, 9223372036854775807, ?2
             WHERE 100>(
                 SELECT COUNT(*) FROM 
                     (SELECT chat_id FROM chats WHERE secondary_owner IS NULL) t1
@@ -315,23 +315,35 @@ async fn list_chats(db: Db, user: users::UserId) -> Result<Json<Vec<Chat>>> {
         .into())
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(crate = "rocket::serde")]
+pub(super) struct ChatMember {
+    user_id: i64,
+    privilage: u8,
+}
+
 #[post("/list_chat_members", data = "<chat>")]
 async fn list_chat_members(
     db: Db,
     user: users::UserId,
     chat: Json<ChatId>,
-) -> Result<Json<Vec<i64>>> {
+) -> Result<Json<Vec<ChatMember>>> {
     Ok(db
         .run(move |db| {
             db.prepare(
                 "
-            SELECT member_id
+            SELECT member_id, privilage
             FROM chat_members
             WHERE ?1=(SELECT member_id FROM chat_members WHERE chat_id=?2 AND member_id=?1)
-                    AND ?1!=member_id AND chat_id=?2
+                    AND chat_id=?2
             ",
             )?
-            .query_map(params![user.0, chat.chat_id], |row| row.get(0))?
+            .query_map(params![user.0, chat.chat_id], |row| {
+                Ok(ChatMember {
+                    user_id: row.get(0)?,
+                    privilage: row.get(1)?,
+                })
+            })?
             .collect::<Result<Vec<_>, _>>()
         })
         .await?

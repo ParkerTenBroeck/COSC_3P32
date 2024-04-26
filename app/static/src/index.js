@@ -382,6 +382,37 @@ async function view_message(message_id){
     }
 }
 
+async function set_message_pinned(message_id, pinned){
+    const resp = await fetch("/database/set_message_pinned", {
+        credentials: "same-origin",
+        mode: "same-origin",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({message_id: message_id, pinned: pinned})
+    });
+
+    if (!resp.ok) {
+        console.log("Status: " + resp.status)
+        return {}
+    }
+}
+
+async function get_messages(chat_id, previous, limit){
+    const resp = await fetch("/database/get_messages", {
+        credentials: "same-origin",
+        mode: "same-origin",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({chat_id: chat_id, previous: previous, limit:limit})
+    });
+
+    if (!resp.ok) {
+        console.log("Status: " + resp.status)
+        return {}
+    }
+    return await resp.json();
+}
+
 async function test(){
     const uid1 = await create_user({name: "ivy", email: "ivy", location: "ivy", password: "ivy", phone_number: "123", username: "ivy", location: "ivy"});
     const uid2 = await create_user({name: "parker", email: "parker", location: "parker", password: "parker", phone_number: "1233", username: "parker", location: "parker"});

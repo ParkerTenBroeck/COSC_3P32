@@ -32,14 +32,17 @@ CREATE TABLE messages (
     last_edited BIGINT,
     sender_id INTEGER NULL REFERENCES users(user_id) ON DELETE SET NULL,
     chat_id INTEGER NOT NULL REFERENCES chats(chat_id) ON DELETE CASCADE,
-    views INTEGER NULL
+    views INTEGER NULL,
+    pinned BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE chats (
     chat_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     primary_owner INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     secondary_owner INTEGER NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    
     sending_privilage UNSIGNED TINYINT NOT NULL,
+
     track_views BOOLEAN NOT NULL,
     max_members UNSIGNED INTEGER NOT NULL,
     chat_name VARCHAR(100) NULL
@@ -54,8 +57,4 @@ CREATE TABLE chat_members (
     last_seen BIGINT NOT NULL DEFAULT 0,
 
     PRIMARY KEY (chat_id, member_id)
-);
-
-CREATE TABLE pinned_messages (
-    message_id INTEGER NOT NULL PRIMARY KEY REFERENCES messages(message_id) ON DELETE CASCADE
 );

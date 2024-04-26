@@ -5,6 +5,7 @@ use rocket::serde::{json::Json, Deserialize, Serialize};
 use rocket::{post, routes};
 
 use rocket_sync_db_pools::rusqlite;
+use rusqlite::named_params;
 
 use self::rusqlite::params;
 use rocket::{delete, http::Status};
@@ -165,6 +166,111 @@ async fn view_message(db: Db, _user: users::UserId, update: Json<MessageId>) -> 
     }
 }
 
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
+#[serde(crate = "rocket::serde")]
+struct UpdateMessagePinned {
+    message_id: i64,
+    pinned: bool,
+}
+
+#[post("/set_message_pinned", data = "<update>")]
+async fn set_message_pinned(
+    db: Db,
+    user: users::UserId,
+    update: Json<UpdateMessagePinned>,
+) -> Result<Status> {
+    let updated = db
+        .run(move |db| {
+            db.execute(
+                "
+                UPDATE messages
+                SET pinned=?3
+                WHERE message_id=?2 AND (
+                    (SELECT privilage FROM chat_members WHERE chat_members.member_id=?1 AND chat_members.chat_id=messages.chat_id) 
+                    >= 
+                    (SELECT sending_privilage FROM chats WHERE chats.chat_id=messages.chat_id)
+                )
+            ",
+                params![user.0, update.message_id, update.pinned],
+            )
+        })
+        .await?;
+    match updated {
+        1 => Ok(Status::Accepted),
+        _ => Ok(Status::NotAcceptable),
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(crate = "rocket::serde")]
+struct Message {
+    message_id: i64,
+    message: String,
+    reply_to: Option<i64>,
+    posted: i64,
+    last_edited: Option<i64>,
+    sender: i64,
+    views: Option<i64>,
+    pinned: bool,
+}
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(crate = "rocket::serde")]
+struct GetMessages {
+    chat_id: i64,
+    previous: Option<usize>,
+    limit: Option<usize>,
+}
+
+#[post("/get_messages", data = "<get>")]
+async fn get_messages(
+    db: Db,
+    user: users::UserId,
+    get: Json<GetMessages>,
+) -> Result<Json<Vec<Message>>> {
+    let messages = db
+    .run(move |conn| {
+        conn.prepare("
+        SELECT 
+            message_id, message, reply_to, posted, last_edited, sender_id, views, pinned
+        FROM 
+            messages
+        WHERE
+            chat_id=:chat_id
+            AND
+            :user_id IN (SELECT member_id FROM chat_members WHERE chat_id=:chat_id)
+        ORDER BY posted ASC, message_id ASC
+        LIMIT :limit OFFSET :offset")?
+            .query_map(named_params!{
+                ":limit": get.limit.unwrap_or(50),
+                ":offset": get.previous.unwrap_or(0),
+                ":chat_id": get.chat_id,
+                ":user_id": user.0,
+            }, |row| {
+                Ok(Message {
+                    message_id: row.get(0)?,
+                    message: row.get(1)?,
+                    reply_to: row.get(2)?,
+                    posted: row.get(3)?,
+                    last_edited: row.get(4)?,
+                    sender: row.get(5)?,
+                    views: row.get(6)?,
+                    pinned: row.get(7)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()
+    })
+    .await?;
+
+    Ok(Json(messages))
+}
+
 pub fn routes() -> Vec<rocket::Route> {
-    routes![send_message, delete_message, update_message, view_message]
+    routes![
+        send_message,
+        delete_message,
+        update_message,
+        view_message,
+        set_message_pinned,
+        get_messages
+    ]
 }
