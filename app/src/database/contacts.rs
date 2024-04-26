@@ -1,7 +1,7 @@
 
 use crate::database::Db;
 use rocket::serde::{json::Json, Deserialize, Serialize};
-use rocket::{get, routes, Route};
+use rocket::{get, post, routes, Route};
 
 use rocket_sync_db_pools::rusqlite;
 use rusqlite::named_params;
@@ -56,7 +56,7 @@ async fn list_users(db: Db, user: users::UserId) -> Result<Json<Vec<Contact>>> {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct ContactId {
-    user_id: i64
+    contact_id: i64
 }
 
 
@@ -72,7 +72,7 @@ async fn add_contact(db: Db, user: users::UserId, contact: Json<ContactId>) -> R
             (:user_id, :contact_id)",
             named_params![
                 ":user_id": user.0,
-                ":contact_id": contact.user_id
+                ":contact_id": contact.contact_id
             ],
         )
     })
@@ -96,7 +96,7 @@ async fn delete_contact(db: Db, user: users::UserId, contact: Json<ContactId>) -
         ",
             named_params![
                 ":user_id": user.0,
-                ":contact_id": contact.user_id
+                ":contact_id": contact.contact_id
             ],
         )
     })
@@ -108,7 +108,7 @@ async fn delete_contact(db: Db, user: users::UserId, contact: Json<ContactId>) -
     }
 }
 
-#[delete("/find_user_email", data = "<email>")]
+#[post("/find_user_email", data = "<email>")]
 async fn find_user_email(db: Db, _user: users::UserId, email: String) -> Result<Json<Option<i64>>>{
     let res = db.0.run(move |db| {
         db.query_row(
@@ -131,7 +131,7 @@ async fn find_user_email(db: Db, _user: users::UserId, email: String) -> Result<
     }
 }
 
-#[delete("/find_user_phone", data = "<phone>")]
+#[post("/find_user_phone", data = "<phone>")]
 async fn find_user_phone(db: Db, _user: users::UserId, phone: String) -> Result<Json<Option<i64>>>{
     let res = db.0.run(move |db| {
         db.query_row(
@@ -154,7 +154,7 @@ async fn find_user_phone(db: Db, _user: users::UserId, phone: String) -> Result<
     }
 }
 
-#[delete("/find_user_username", data = "<username>")]
+#[post("/find_user_username", data = "<username>")]
 async fn find_user_username(db: Db, _user: users::UserId, username: String) -> Result<Json<Option<i64>>>{
     let res = db.0.run(move |db| {
         db.query_row(

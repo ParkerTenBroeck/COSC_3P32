@@ -1,17 +1,29 @@
-async function add_contact(user_id, contact_id) {
+export async function add_contact(contact_id) {
     const resp = await fetch("/database/add_contact", {
         credentials: "same-origin",
         mode: "same-origin",
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({user_id: user_id, contact_id: contact_id})
+        body: JSON.stringify({contact_id: contact_id})
     });
 
     if (!resp.ok) {
         console.log("Status: " + resp.status)
         return Promise.reject("server")
     }
-    return await resp.json();
 }
 
-export { add_contact };
+export async function delete_contact(contact_id){
+    const resp = await fetch("/database/delete_contact", {
+        credentials: "same-origin",
+        mode: "same-origin",
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({contact_id: contact_id})
+    });
+
+    if (!resp.ok) {
+        console.log("Status: " + resp.status)
+        return Promise.reject("server")
+    }
+}
