@@ -1,7 +1,13 @@
-pub mod api;
+pub mod admin;
+pub mod chats;
+pub mod messages;
+pub mod users;
 
+use rocket::response::Debug;
 use rocket::{fairing::AdHoc, Build, Rocket};
 use rocket_sync_db_pools::database;
+
+type Result<T, E = Debug<rusqlite::Error>> = std::result::Result<T, E>;
 
 #[database("rusqlite")]
 pub(in crate::database) struct Db(rusqlite::Connection);
@@ -28,6 +34,9 @@ pub fn stage_database() -> AdHoc {
         } else {
             rocket
         }
-        .mount("/database", api::api_routes())
+        .mount("/database", users::routes())
+        .mount("/database", messages::routes())
+        .mount("/database", chats::routes())
+        .mount("/database", admin::routes())
     })
 }
