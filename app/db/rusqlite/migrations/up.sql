@@ -19,7 +19,7 @@ CREATE TABLE users (
 
 CREATE TABLE contacts (
     user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    contact_user_id INTEGER  REFERENCES users(user_id) ON DELETE CASCADE,
+    contact_user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     PRIMARY KEY(user_id, contact_user_id)
 );
 
@@ -31,7 +31,8 @@ CREATE TABLE messages (
     posted BIGINT NOT NULL,
     last_edited BIGINT,
     sender_id INTEGER NULL REFERENCES users(user_id) ON DELETE SET NULL,
-    chat_id INTEGER NOT NULL REFERENCES chats(chat_id) ON DELETE CASCADE
+    chat_id INTEGER NOT NULL REFERENCES chats(chat_id) ON DELETE CASCADE,
+    views INTEGER NULL
 );
 
 CREATE TABLE chats (
@@ -53,11 +54,6 @@ CREATE TABLE chat_members (
     last_seen BIGINT NOT NULL DEFAULT 0,
 
     PRIMARY KEY (chat_id, member_id)
-);
-
-CREATE TABLE message_views (
-    message_id INTEGER NOT NULL PRIMARY KEY REFERENCES messages(message_id) ON DELETE CASCADE,
-    views INTEGER NOT NULL
 );
 
 CREATE TABLE pinned_messages (
