@@ -1,8 +1,8 @@
 pub mod admin;
 pub mod chats;
+pub mod contacts;
 pub mod messages;
 pub mod users;
-pub mod contacts;
 
 use rocket::response::Debug;
 use rocket::{fairing::AdHoc, Build, Rocket};
@@ -36,7 +36,7 @@ pub fn stage_database() -> AdHoc {
             rocket
         }
         .mount("/database", users::routes())
-        .mount("/database", messages::routes())
+        .attach(messages::adhoc())
         .mount("/database", chats::routes())
         .mount("/database", admin::routes())
         .mount("/database", contacts::routes())

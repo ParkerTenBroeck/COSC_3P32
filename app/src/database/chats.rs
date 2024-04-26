@@ -105,11 +105,11 @@ async fn create_channel(
     group: Json<CreateGroup>,
 ) -> Result<Json<i64>> {
     let val = db
-            .run(move |db| {
-                let tran = db.transaction()?;
+        .run(move |db| {
+            let tran = db.transaction()?;
 
-                let chat_id = tran.query_row(
-                    "
+            let chat_id = tran.query_row(
+                "
             INSERT INTO chats
                 (primary_owner, sending_privilage, track_views, max_members, chat_name)
             SELECT
@@ -123,31 +123,31 @@ async fn create_channel(
                 WHERE member_id=?1
             )
             RETURNING chat_id",
-                    params![user.0, group.name],
-                    |row| row.get(0),
-                )?;
+                params![user.0, group.name],
+                |row| row.get(0),
+            )?;
 
-                tran.execute(
-                    "
+            tran.execute(
+                "
             INSERT INTO chat_members
                 (chat_id, member_id, privilage)
             VALUES
                 (?1, ?2, 255)",
-                    params![chat_id, user.0],
-                )?;
+                params![chat_id, user.0],
+            )?;
 
-                tran.commit()?;
+            tran.commit()?;
 
-                Result::<i64, rusqlite::Error>::Ok(chat_id)
-            })
-            .await?;
+            Result::<i64, rusqlite::Error>::Ok(chat_id)
+        })
+        .await?;
     Ok(val.into())
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
-struct ChatId {
-    chat_id: i64,
+pub struct ChatId {
+    pub chat_id: i64,
 }
 
 #[post("/join_chat", data = "<chat>")]
