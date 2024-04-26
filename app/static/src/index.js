@@ -306,6 +306,37 @@ async function leave_chat(chat_id){
     }
 }
 
+async function list_chats(){
+    const resp = await fetch("/database/list_chats", {
+        credentials: "same-origin",
+        mode: "same-origin",
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+    });
+
+    if (!resp.ok) {
+        console.log("Status: " + resp.status)
+        return {}
+    }
+    return await resp.json();
+}
+
+async function list_chat_members(chat_id){
+    const resp = await fetch("/database/list_chat_members", {
+        credentials: "same-origin",
+        mode: "same-origin",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({chat_id: chat_id})
+    });
+
+    if (!resp.ok) {
+        console.log("Status: " + resp.status)
+        return {}
+    }
+    return await resp.json();
+}
+
 async function test(){
     const uid1 = await create_user({name: "ivy", email: "ivy", location: "ivy", password: "ivy", phone_number: "123", username: "ivy", location: "ivy"});
     const uid2 = await create_user({name: "parker", email: "parker", location: "parker", password: "parker", phone_number: "1233", username: "parker", location: "parker"});

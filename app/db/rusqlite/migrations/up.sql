@@ -26,6 +26,7 @@ CREATE TABLE contacts (
 CREATE TABLE messages (
     message_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     message TEXT,
+    reply_to INTEGER NULL REFERENCES messages(message_id) ON DELETE SET NULL,
     attachment INTEGER NULL REFERENCES files(file_id),
     posted BIGINT NOT NULL,
     last_edited BIGINT,
@@ -47,6 +48,9 @@ CREATE TABLE chat_members (
     chat_id INTEGER NOT NULL REFERENCES chats(chat_id) ON DELETE CASCADE,
     member_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     privilage UNSIGNED TINYINT NOT NULL,
+
+    wants_notifications BOOLEAN NOT NULL DEFAULT TRUE,
+    last_seen BIGINT NOT NULL DEFAULT 0,
 
     PRIMARY KEY (chat_id, member_id)
 );

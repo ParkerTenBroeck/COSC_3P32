@@ -12,7 +12,7 @@ type Result<T, E = Debug<rusqlite::Error>> = std::result::Result<T, E>;
 pub mod user {
 
     #[derive(Debug, Clone, Copy)]
-    pub struct UserId(pub i64);
+    pub(super) struct UserId(pub i64);
 
     #[rocket::async_trait]
     impl<'r> FromRequest<'r> for UserId {
@@ -101,15 +101,6 @@ pub mod user {
         db: Db,
         create_user: Json<CreateUser>,
     ) -> Result<std::result::Result<Created<Json<i64>>, Status>> {
-        // if create_user.email.is_empty()
-        //     | create_user.name.is_empty()
-        //     | create_user.password.is_empty()
-        //     | create_user.phone_number.is_empty()
-        //     | create_user.username.is_empty()
-        //     | create_user.location.is_empty()
-        // {
-        //     return Ok(Err(Status::BadRequest));
-        // }
         let id = db
             .run(move |conn| {
                 conn.query_row(
@@ -137,6 +128,61 @@ pub mod user {
             Ok(id) => Ok(Ok(Created::new("/").body(id.into()))),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(Err(Status::Conflict)),
             Err(err) => Err(err.into()),
+        }
+    }
+
+    fn deserialize_optional_field<'de, T, D>(de: D) -> Result<Option<Option<T>>, D::Error>
+    where
+        D: rocket::serde::Deserializer<'de>,
+        T: Deserialize<'de>,
+    {
+        Deserialize::deserialize(de).map(Some)
+    }
+
+    #[derive(Debug, Clone, Deserialize, Serialize)]
+    #[serde(crate = "rocket::serde")]
+    struct UpdateUser {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        phone_number: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        name: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        email: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        location: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        username: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        password: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        bio: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        availability: Option<u8>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(deserialize_with = "deserialize_optional_field")]
+        pfp_file_id: Option<Option<i64>>,
+    }
+
+    #[post("/update_user", data = "<updates>")]
+    async fn update_user(db: Db, user: UserId, updates: Json<UpdateUser>) -> Result<Status> {
+        todo!();
+
+        let affected = db
+            .run(move |db| {
+                Result::<_, rusqlite::Error>::Ok(db.execute(
+                    "
+                UPDATE users
+                SET
+                WHERE user_id=?1
+            ",
+                    params![user.0],
+                )?)
+            })
+            .await?;
+
+        match affected {
+            1 => Ok(Status::Accepted),
+            _ => Ok(Status::NotAcceptable),
         }
     }
 
@@ -256,14 +302,13 @@ pub mod user {
             login,
             who_am_i,
             logout,
-            delete_account
+            delete_account,
+            update_user
         ]
     }
 }
 
-mod messages {
-    use std::time::SystemTime;
-
+mod chats {
     use rocket::{delete, http::Status};
 
     use super::*;
@@ -314,7 +359,11 @@ mod messages {
     }
 
     #[post("/create_group", data = "<group>")]
-    async fn create_group(db: Db, user: user::UserId, group: Json<CreateGroup>) -> Result<Json<i64>> {
+    async fn create_group(
+        db: Db,
+        user: user::UserId,
+        group: Json<CreateGroup>,
+    ) -> Result<Json<i64>> {
         let val = db
             .run(move |db| {
                 let tran = db.transaction()?;
@@ -356,7 +405,11 @@ mod messages {
     }
 
     #[post("/create_channel", data = "<group>")]
-    async fn create_channel(db: Db, user: user::UserId, group: Json<CreateGroup>) -> Result<Json<i64>> {
+    async fn create_channel(
+        db: Db,
+        user: user::UserId,
+        group: Json<CreateGroup>,
+    ) -> Result<Json<i64>> {
         let val = db
             .run(move |db| {
                 let tran = db.transaction()?;
@@ -405,8 +458,10 @@ mod messages {
 
     #[post("/join_chat", data = "<chat>")]
     async fn join_chat(db: Db, user: user::UserId, chat: Json<ChatId>) -> Result<Status> {
-        let affected = db.0.run(move |db|{
-            Result::<_, rusqlite::Error>::Ok(db.execute("
+        let affected =
+            db.0.run(move |db| {
+                Result::<_, rusqlite::Error>::Ok(db.execute(
+                    "
             INSERT INTO chat_members
                 (chat_id, member_id, privilage)
             SELECT
@@ -425,20 +480,24 @@ mod messages {
                 > 
                 (SELECT COUNT(*) FROM chat_members WHERE chat_id=?1)
             )
-            ", params![chat.chat_id, user.0])?)
-        }).await?;
+            ",
+                    params![chat.chat_id, user.0],
+                )?)
+            })
+            .await?;
 
-        match affected{
+        match affected {
             1 => Ok(Status::Accepted),
-            _ => Ok(Status::NotAcceptable)
+            _ => Ok(Status::NotAcceptable),
         }
     }
 
     #[post("/leave_chat", data = "<chat>")]
-    async fn leave_chat(db: Db, user: user::UserId, chat: Json<ChatId>) -> Result<Status>{
-
-        let num = db.run(move |db|{
-            db.execute("
+    async fn leave_chat(db: Db, user: user::UserId, chat: Json<ChatId>) -> Result<Status> {
+        let num = db
+            .run(move |db| {
+                db.execute(
+                    "
             DELETE FROM chat_members
                 WHERE 
             chat_id=?1 AND member_id=?2 
@@ -457,31 +516,153 @@ mod messages {
                     chats 
                 WHERE 
                     chats.chat_id=?1
-            ), TRUE)", params![chat.chat_id, user.0])
-        }).await?;
+            ), TRUE)",
+                    params![chat.chat_id, user.0],
+                )
+            })
+            .await?;
 
-        match num{
+        match num {
             1 => Ok(Status::Ok),
-            _ => Ok(Status::NotAcceptable)
+            _ => Ok(Status::NotAcceptable),
         }
     }
 
     #[delete("/delete_chat", data = "<chat>")]
     async fn delete_chat(db: Db, user: user::UserId, chat: Json<ChatId>) -> Result<Status> {
-        let affected = db.0.run(move |db|{
-            Result::<_, rusqlite::Error>::Ok(db.execute("
+        let affected =
+            db.0.run(move |db| {
+                Result::<_, rusqlite::Error>::Ok(db.execute(
+                    "
             DELETE FROM chats
                 WHERE
                 chat_id = ?2 AND (primary_owner=?1 OR IFNULL(secondary_owner=?1, FALSE))
-            ", params![user.0, chat.chat_id])?)
+            ",
+                    params![user.0, chat.chat_id],
+                )?)
+            })
+            .await?;
+
+        match affected {
+            1 => Ok(Status::Accepted),
+            _ => Ok(Status::Unauthorized),
+        }
+    }
+
+    #[derive(Debug, Clone, Copy, Deserialize, Serialize)]
+    #[serde(crate = "rocket::serde")]
+    struct UpdatePerm {
+        chat_id: i64,
+        user_id: i64,
+        new_perm: u8,
+    }
+
+    #[delete("/update_chat_member_perm", data = "<updated>")]
+    async fn update_chat_member_perm(
+        db: Db,
+        user: user::UserId,
+        updated: Json<UpdatePerm>,
+    ) -> Result<Status> {
+        let affected = db.0.run(move |db|{
+            Result::<_, rusqlite::Error>::Ok(db.execute("
+            UPDATE chat_members
+                SET privilage=?3
+            WHERE
+                chat_id=?1 AND member_id=?2 
+                AND ?3<(SELECT SUM(chat_members) FROM chat_members WHERE chat_id=?1 AND member_id=?4)
+                AND privilage<(SELECT SUM(chat_members) FROM chat_members WHERE chat_id=?1 AND member_id=?4)
+            ", params![updated.chat_id, updated.user_id, updated.new_perm, user.0])?)
         }).await?;
 
-        match affected{
+        match affected {
             1 => Ok(Status::Accepted),
-            _ => Ok(Status::Unauthorized)
+            _ => Ok(Status::Unauthorized),
         }
-        
     }
+
+    #[derive(Debug, Clone, Deserialize, Serialize)]
+    #[serde(crate = "rocket::serde")]
+    pub(super) struct Chat {
+        chat_id: i64,
+        owner: i64,
+        seconary: Option<i64>,
+        send_priv: u8,
+        tracks_views: bool,
+        max_members: u64,
+        name: Option<String>,
+    }
+
+    #[get("/list_chats")]
+    async fn list_chats(db: Db, user: user::UserId) -> Result<Json<Vec<Chat>>> {
+        Ok(db
+            .run(move |db| {
+                db.prepare(
+                    "
+            SELECT chats.*
+            FROM chats
+            INNER JOIN chat_members ON chats.chat_id=chat_members.chat_id
+            AND chat_members.member_id=?1
+            ",
+                )?
+                .query_map(params![user.0], |row| {
+                    Ok(Chat {
+                        chat_id: row.get(0)?,
+                        owner: row.get(1)?,
+                        seconary: row.get(2)?,
+                        send_priv: row.get(3)?,
+                        tracks_views: row.get(4)?,
+                        max_members: row.get(5)?,
+                        name: row.get(6)?,
+                    })
+                })?
+                .collect::<Result<Vec<_>, _>>()
+            })
+            .await?
+            .into())
+    }
+
+    #[post("/list_chat_members", data = "<chat>")]
+    async fn list_chat_members(db: Db, user: user::UserId, chat: Json<ChatId>) -> Result<Json<Vec<i64>>> {
+        Ok(db
+            .run(move |db| {
+                db.prepare(
+                    "
+            SELECT member_id
+            FROM chat_members
+            WHERE ?1=(SELECT member_id FROM chat_members WHERE chat_id=?2 AND member_id=?1)
+                    AND ?1!=member_id AND chat_id=?2
+            ",
+                )?
+                .query_map(params![user.0, chat.chat_id], |row| {
+                    Ok(row.get(0)?)
+                })?
+                .collect::<Result<Vec<_>, _>>()
+            })
+            .await?
+            .into())
+    }
+
+    pub fn routes() -> Vec<rocket::Route> {
+        routes![
+            create_dm,
+            create_channel,
+            create_group,
+            join_chat,
+            delete_chat,
+            leave_chat,
+            update_chat_member_perm,
+            list_chats,
+            list_chat_members
+        ]
+    }
+}
+
+mod messages {
+    use std::time::SystemTime;
+
+    use rocket::{delete, http::Status};
+
+    use super::*;
 
     #[derive(Debug, Clone, Deserialize, Serialize)]
     #[serde(crate = "rocket::serde")]
@@ -613,17 +794,7 @@ mod messages {
     }
 
     pub fn routes() -> Vec<rocket::Route> {
-        routes![
-            send_message,
-            delete_message,
-            update_message,
-            create_dm,
-            create_channel,
-            create_group,
-            join_chat,
-            delete_chat,
-            leave_chat
-        ]
+        routes![send_message, delete_message, update_message]
     }
 }
 
@@ -631,5 +802,6 @@ pub fn api_routes() -> Vec<rocket::Route> {
     let mut items = Vec::new();
     items.append(&mut user::routes());
     items.append(&mut messages::routes());
+    items.append(&mut chats::routes());
     items
 }
