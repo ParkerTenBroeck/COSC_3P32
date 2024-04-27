@@ -1,4 +1,4 @@
-async function create_user(user) {
+export async function create_user(user) {
     let resp = await fetch('/database/create_user', {
       method: 'POST',
       headers: {
@@ -18,7 +18,7 @@ async function create_user(user) {
     return await resp.json();
 }
 
-async function who_am_i(){
+export async function who_am_i(){
     const resp = await fetch("/database/who_am_i", {
         credentials: "same-origin",
         mode: "same-origin",
@@ -33,7 +33,7 @@ async function who_am_i(){
     return await resp.json();
 }
 
-async function login(email, password){
+export async function login(email, password){
     const resp = await fetch("/database/login", {
         credentials: "same-origin",
         mode: "same-origin",
@@ -49,7 +49,7 @@ async function login(email, password){
     return await resp.json();
 }
 
-async function logout(){
+export async function logout(){
     const resp = await fetch("/database/logout", {
         credentials: "same-origin",
         mode: "same-origin",
@@ -65,7 +65,7 @@ async function logout(){
     }
 }
 
-async function delete_account(){
+export async function delete_account(){
     const resp = await fetch("/database/delete_account", {
         credentials: "same-origin",
         mode: "same-origin",
@@ -81,5 +81,18 @@ async function delete_account(){
     window.location.href = 'login.html'; // Redirect to login page
 }
 
+export async function get_username(user_id){
+    const resp = await fetch("/database/get_username/"+user_id, {
+        credentials: "same-origin",
+        mode: "same-origin",
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+    });
 
-export { create_user, delete_account, login, logout, who_am_i };
+    if (!resp.ok) {
+        console.log("Status: " + resp.status)
+        return Promise.reject("server")
+    }
+
+    return await resp.text();
+}

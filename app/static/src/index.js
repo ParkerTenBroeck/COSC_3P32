@@ -34,4 +34,6 @@ export async function test(){
     await users.login("ivy", "ivy");
     await chats.join_chat(group_id);
     await messages.send_message("hiiii!", group_id);
+
+    await chats.create_channel("asldkajsdl");
 }

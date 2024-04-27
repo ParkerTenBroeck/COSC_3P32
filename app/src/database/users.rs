@@ -4,6 +4,7 @@ use rocket::serde::{json::Json, Deserialize, Serialize};
 use rocket::{get, post, routes};
 
 use rocket_sync_db_pools::rusqlite;
+use rusqlite::named_params;
 
 use self::rusqlite::params;
 
@@ -262,6 +263,37 @@ async fn delete_account(db: Db, jar: &CookieJar<'_>, user: UserId) -> Result<Sta
     }
 }
 
+#[get("/get_username/<user_id>")]
+async fn get_username(db: Db, _user: users::UserId, user_id: i64) -> Result<String>{
+    let username = db
+        .run(move |conn| {
+            conn.prepare(
+                "
+            SELECT 
+                username phone_number
+            FROM 
+                users
+            WHERE user_id=:user_id
+            ",
+            )?
+            .query_map(
+                named_params![
+                    ":user_id": user_id
+                ],
+                |row| {
+                    Ok(match row.get::<_, Option<String>>(0)? {
+                        Some(name) => name,
+                        None => row.get(1)?,
+                    })
+                },
+            )?
+            .collect::<Result<String, _>>()
+        })
+        .await?;
+
+    Ok(username)
+}
+
 pub fn routes() -> Vec<Route> {
     routes![
         new_user,
@@ -269,6 +301,7 @@ pub fn routes() -> Vec<Route> {
         who_am_i,
         logout,
         delete_account,
-        update_user
+        update_user,
+        get_username
     ]
 }

@@ -8,6 +8,8 @@ use rusqlite::named_params;
 
 use super::*;
 
+
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct Contact {
@@ -27,7 +29,7 @@ async fn list_users(db: Db, user: users::UserId) -> Result<Json<Vec<Contact>>> {
             conn.prepare(
                 "
             SELECT 
-                user.user_id, user.username user.phone_number user.bio, user.pfp_file_id 
+                users.user_id, users.username users.phone_number users.bio, users.pfp_file_id 
             FROM 
                 users
             INNER JOIN contacts ON contacts.contact_user_id = users.user_id
