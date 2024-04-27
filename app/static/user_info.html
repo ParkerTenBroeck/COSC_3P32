@@ -28,15 +28,11 @@
         try {
             const userData = await api.users.who_am_i();
             if(userData == null){
-            // Handle error, e.g., redirect to login page or display error message
-            console.error('Error fetching user information:', error);
             window.location.href = 'login.html'; // Redirect to login page
             }else{
             displayUserInfo(userData);
             }
         } catch (error) {
-            // Handle error, e.g., redirect to login page or display error message
-            console.error('Error fetching user information:', error);
             window.location.href = 'login.html'; // Redirect to login page
         }
     }

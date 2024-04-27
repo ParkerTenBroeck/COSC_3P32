@@ -249,7 +249,6 @@
             });
             const evtSource = new EventSource("/database/listen_for_messages/" + chatData.chat_id);
             evtSource.onmessage = async (e) => {
-                console.log(e);
                 var message = await api.messages.get_message(JSON.parse(e.data).id);
                 addMessage(message);
             };
@@ -262,7 +261,6 @@
 
         function addMessage(message){
           const chatArea = document.getElementById("chatArea");
-          console.log(message);
           var chatMessages = document.getElementById("chatMessages");
           var newMessage = document.createElement("li");
           newMessage.textContent = message.message;
@@ -295,9 +293,7 @@
 
 
             for (const data of chatData){
-                console.log(data);
                 if (data.seconary != null){
-                    console.log(data);
                     let other_id = data.owner==userData.user_id?data.seconary:data.owner;
                     let name = await api.users.get_username(other_id);
                     dmArea.innerHTML += `<li class="chat-list-item" id='cid${data.chat_id}' onclick='showChat(${JSON.stringify(name)}, ${JSON.stringify(data)})'>${name}</li>`;
@@ -309,14 +305,6 @@
                     channelArea.innerHTML += `<li class="chat-list-item" id='cid${data.chat_id}' onclick='showChat(${JSON.stringify(name)}, ${JSON.stringify(data)})'>${name}</li>`;
                 }
             }
-        }
-
-        function saveSettings() {
-            var username = document.getElementById("username").value;
-            var email = document.getElementById("email").value;
-            // Code to save settings
-            console.log("Username:", username);
-            console.log("Email:", email);
         }
 
         async function reload_user_data(){
