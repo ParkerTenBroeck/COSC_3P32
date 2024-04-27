@@ -1,0 +1,31 @@
+q3.
+
+
+User(**<ins>user_id: INTEGER</ins>**, phone_number, name, email, location, username, bio, availability, pfp_file_id)
+
+U(id, pn, n, e, l, uname, b, a, p)
+
+id    -> id, pn, n, e, l, uname, b, a, p
+pn    -> id, pn, n, e, l, uname, b, a, p
+e     -> id, pn, n, e, l, uname, b, a, p
+uname -> id, pn, n, e, l, uname, b, a, p
+
+Contacts(**<ins>user_id: INTEGER, contact_user_id</ins>**)
+
+C(uid, cuid)
+
+composite key
+
+Group(**<ins>group_id</ins>**, group_name: STRING, owner: user_id)
+
+G(gid, n, o)
+
+gid -> n, o
+
+GroupMembers(**<ins>group_id, user_id</ins>**, privilege)
+
+GM(gid, uid, p)
+
+gid, uid -> p
+
+
