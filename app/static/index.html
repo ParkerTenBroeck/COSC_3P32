@@ -41,13 +41,16 @@
         .chat {
             flex: 1;
             padding: 20px;
+            display:flex;
+            flex-direction: column;
         }
         .chat-header {
             font-weight: bold;
             margin-bottom: 10px;
         }
         .chat-messages {
-            max-height: 60vh;
+          height:0;
+            flex-grow: 1;
             overflow-y: auto;
             border: 1px solid #ccc;
             padding: 10px;
@@ -199,25 +202,80 @@
             await reload_chat_data();
             document.getElementById("cid"+new_id).onclick();
         }
+
+        function sortList(ul){
+            var new_ul = ul.cloneNode(false);
+
+            // Add all lis to an array
+            var lis = [];
+            for(var i = ul.childNodes.length; i--;){
+                if(ul.childNodes[i].nodeName === 'LI')
+                    lis.push(ul.childNodes[i]);
+            }
+
+            // Sort the lis in descending order
+            lis.sort(function(a, b){
+            return parseInt(b.childNodes[0].data , 10) - 
+                    parseInt(a.childNodes[0].data , 10);
+            });
+
+            // Add them into the ul in order
+            for(var i = 0; i < lis.length; i++)
+                new_ul.appendChild(lis[i]);
+            ul.parentNode.replaceChild(new_ul, ul);
+        }
+
         
-        function showChat(name, chatData) {
+        async function showChat(name, chatData) {
+
+            try{
+                if(window.EventSource != null)
+                window.evtSource.close()
+            }catch(e){}
+
             var chatArea = document.getElementById("chatArea");
             chatArea.innerHTML = `
                 <div class="chat-header">${name}</div>
-                <div class="chat-messages" id="chatMessages">
+                <ul style="overflow-x:scroll" class="chat-messages" id="chatMessages">
                     <!-- Chat messages for ${name} will be displayed here -->
-                </div>
+                </ul>
                 <input type="text" id="messageInput" class="message-input" placeholder="Type your message...">
-                <button onclick="sendMessage(${JSON.stringify(chatData)})">Send</button>`;
+                `;
+
+            document.getElementById("messageInput").addEventListener("keypress", (e) => {
+              if (!e.shiftKey && e.keyCode == 13){
+                sendMessage(chatData);
+              }
+            });
+            const evtSource = new EventSource("/database/listen_for_messages/" + chatData.chat_id);
+            evtSource.onmessage = async (e) => {
+                console.log(e);
+                var message = await api.messages.get_message(JSON.parse(e.data).id);
+                addMessage(message);
+            };
+            for (message of await api.messages.get_messages(chatData.chat_id)){
+              addMessage(message);
+            }
+            window.evtSource=evtSource;
+            // document.getElementById("chatMessages").scroll(0, 99999999999);
         }
 
-        function sendMessage(chat_id) {
+        function addMessage(message){
+          const chatArea = document.getElementById("chatArea");
+          console.log(message);
+          var chatMessages = document.getElementById("chatMessages");
+          var newMessage = document.createElement("li");
+          newMessage.textContent = message.message;
+          chatMessages.appendChild(newMessage);
+          document.getElementById("chatMessages").scroll(0, 999999999);
+        }
+
+        async function sendMessage(chatData) {
             var messageInput = document.getElementById("messageInput");
             var message = messageInput.value;
-            var chatMessages = document.getElementById("chatMessages");
-            var newMessage = document.createElement("div");
-            newMessage.textContent = message;
-            chatMessages.appendChild(newMessage);
+            let num = await api.messages.send_message(message, chatData.chat_id);
+
+
             // Here you can implement sending the message to the server or perform any other action
             messageInput.value = ""; // Clear the input field after sending the message
         }

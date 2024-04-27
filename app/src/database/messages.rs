@@ -1,6 +1,4 @@
-use std::collections::{HashMap, VecDeque};
-use std::sync::atomic::AtomicUsize;
-use std::sync::Arc;
+use std::collections::HashMap;
 use std::time::SystemTime;
 
 use crate::database::Db;
@@ -17,82 +15,36 @@ use rocket::{delete, http::Status};
 use super::*;
 
 #[derive(Debug, Default)]
-struct MessageChannelUpdates {
-    members: AtomicUsize,
-    con: rocket::tokio::sync::Notify,
-    queue: rocket::tokio::sync::Mutex<VecDeque<(usize, MessageUpdate)>>,
+struct MessageEvents{
+    map: rocket::tokio::sync::Mutex<HashMap<i64, Vec<rocket::tokio::sync::mpsc::Sender<MessageUpdate>>>>
 }
 
-struct MessageChannelUpdatesGuard {
-    inner: Arc<MessageChannelUpdates>,
-}
+impl MessageEvents{
+    pub async fn event(&self, channel_id: i64, event: MessageUpdate) {
+        let mut guard = self.map.lock().await;
+        if let Some(some) = guard.get_mut(&channel_id) {
+            
 
-impl Drop for MessageChannelUpdatesGuard {
-    fn drop(&mut self) {
-        self.inner.leave()
-    }
-}
+            some.retain_mut(|s|{
+                !s.is_closed()
+            });
 
-impl MessageChannelUpdatesGuard {
-    pub async fn next(&self) -> MessageUpdate {
-        loop {
-            let mut guard = self.inner.queue.lock().await;
-
-            match guard.get_mut(0) {
-                Some((1|0, _)) => return guard.pop_front().unwrap().1,
-                Some((number, message)) => {
-                    *number -= 1;
-                    return message.clone();
-                }
-                None => {
-                    drop(guard);
-                    self.inner.con.notified().await;
-                }
+            for s in some.iter_mut(){
+                _ = s.send(event).await;
+            }
+            // rocket::tokio::join!()
+            if some.len() == 0{
+                guard.remove(&channel_id);
+            }else{
+                some.shrink_to_fit()
             }
         }
     }
-}
 
-impl MessageChannelUpdates {
-    pub fn join(self: Arc<Self>) -> MessageChannelUpdatesGuard {
-        self.members
-            .fetch_add(1, std::sync::atomic::Ordering::AcqRel);
-        MessageChannelUpdatesGuard { inner: self }
-    }
-    fn leave(&self) {
-        self.members
-            .fetch_sub(1, std::sync::atomic::Ordering::AcqRel);
-    }
-    async fn push(&self, update: MessageUpdate) {
-        let num = self.members.load(std::sync::atomic::Ordering::Acquire);
-        if num > 0{
-            self.queue.lock().await.push_back((
-                num,
-                update,
-            ));
-            self.con.notify_waiters();
-        }
-    }
-}
-
-#[derive(Debug, Default)]
-struct MessageUpdates {
-    items: rocket::tokio::sync::Mutex<HashMap<i64, Arc<MessageChannelUpdates>>>,
-}
-
-impl MessageUpdates {
-    pub async fn join(&self, channel_id: i64) -> MessageChannelUpdatesGuard {
-        self.items.lock().await.entry(channel_id).or_default().clone().join()
-    }
-
-    pub async fn push(&self, channel_id: i64, update: MessageUpdate) {
-        self.items
-            .lock()
-            .await
-            .entry(channel_id)
-            .or_default()
-            .push(update)
-            .await
+    pub async fn listen(&self, channel_id: i64) -> rocket::tokio::sync::mpsc::Receiver<MessageUpdate>{
+        let (sender, receiver) = rocket::tokio::sync::mpsc::channel(10);
+        self.map.lock().await.entry(channel_id).or_default().push(sender);
+        receiver
     }
 }
 
@@ -110,12 +62,12 @@ async fn send_message(
     db: Db,
     user: users::UserId,
     message: Json<SendMessage>,
-    listeners: &State<MessageUpdates>
+    listeners: &State<MessageEvents>
 ) -> Result<Json<i64>> {
     let since_the_epoch = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .expect("Time went backwards")
-        .as_secs();
+        .as_millis();
 
     let chat_id = message.chat_id;
 
@@ -151,7 +103,7 @@ async fn send_message(
         })
         .await?;
 
-    listeners.push(chat_id, MessageUpdate::New(mid)).await;
+    listeners.event(chat_id, MessageUpdate::New(mid)).await;
 
     Ok(mid.into())
 }
@@ -167,7 +119,7 @@ async fn delete_message(
     db: Db,
     user: users::UserId,
     message_id: Json<MessageId>,
-    listeners: &State<MessageUpdates>
+    listeners: &State<MessageEvents>
 ) -> Result<Status> {
     let message_id = message_id.message_id;
     let chat_id: i64 = db
@@ -184,7 +136,7 @@ async fn delete_message(
         })
         .await?;
 
-    listeners.push(chat_id, MessageUpdate::Deleted(message_id)).await;
+    listeners.event(chat_id, MessageUpdate::Deleted(message_id)).await;
     Ok(Status::Accepted)
 }
 
@@ -200,7 +152,7 @@ async fn update_message(
     db: Db,
     user: users::UserId,
     message: Json<UpdateMessage>,
-    listeners: &State<MessageUpdates>
+    listeners: &State<MessageEvents>
 ) -> Result<Status> {
     let message_id = message.message_id;
     let chat_id = db
@@ -208,7 +160,7 @@ async fn update_message(
             let since_the_epoch = SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
                 .expect("Time went backwards")
-                .as_secs();
+                .as_millis();
 
             let tran = conn.transaction()?;
             let updated: i64 = tran.query_row(
@@ -230,7 +182,7 @@ async fn update_message(
         })
         .await?;
 
-        listeners.push(chat_id, MessageUpdate::Updated(message_id)).await;
+        listeners.event(chat_id, MessageUpdate::Updated(message_id)).await;
     Ok(Status::Accepted)
 }
 
@@ -290,8 +242,9 @@ async fn set_message_pinned(
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
+#[serde(tag = "tag", content = "id")]
 enum MessageUpdate {
     New(i64),
     Updated(i64),
@@ -300,16 +253,20 @@ enum MessageUpdate {
 }
 
 #[get("/listen_for_messages/<chat_id>")]
-fn listen_for_messages(shutdown: rocket::Shutdown, listeners: &State<MessageUpdates>, chat_id: i64) -> EventStream![Event + '_] {
+fn listen_for_messages(shutdown: rocket::Shutdown, listeners: &State<MessageEvents>, chat_id: i64) -> EventStream![Event + '_] {
     EventStream! {
-        let channel_updates = listeners.join(chat_id).await;
+        let mut channel_updates = listeners.listen(chat_id).await;
         let mut shutdown = std::pin::pin!(shutdown);
         
         loop {
             rocket::tokio::select! {
                 _ = shutdown.as_mut() => {break}
-                val = channel_updates.next() => {
-                    yield Event::json(&val);
+                val = channel_updates.recv() => {
+                    if let Some(val) = val{
+                        yield Event::json(&val);
+                    }else{
+                        break;
+                    }
                 }
             }
         }
@@ -384,6 +341,47 @@ async fn get_messages(
     Ok(Json(messages))
 }
 
+#[get("/get_message/<message_id>")]
+async fn get_message(
+    db: Db,
+    user: users::UserId,
+    message_id: i64,
+) -> Result<Json<Message>> {
+    let messages = db
+        .run(move |conn| {
+            conn.query_row(
+                "
+        SELECT 
+            message_id, message, reply_to, posted, last_edited, sender_id, views, pinned
+        FROM 
+            messages
+        WHERE
+            message_id=:message_id
+            AND
+            :user_id IN (SELECT member_id FROM chat_members WHERE chat_members.chat_id=messages.chat_id)",
+                named_params! {
+                    ":message_id": message_id,
+                    ":user_id": user.0,
+                },
+                |row| {
+                    Ok(Message {
+                        message_id: row.get(0)?,
+                        message: row.get(1)?,
+                        reply_to: row.get(2)?,
+                        posted: row.get(3)?,
+                        last_edited: row.get(4)?,
+                        sender: row.get(5)?,
+                        views: row.get(6)?,
+                        pinned: row.get(7)?,
+                    })
+                },
+            )
+        })
+        .await?;
+
+    Ok(Json(messages))
+}
+
 pub fn adhoc() -> AdHoc {
     AdHoc::on_ignite("messages", |rocket| async {
         rocket.mount(
@@ -395,8 +393,9 @@ pub fn adhoc() -> AdHoc {
                 view_message,
                 set_message_pinned,
                 get_messages,
-                listen_for_messages
+                listen_for_messages,
+                get_message
             ],
-        ).manage(MessageUpdates::default())
+        ).manage(MessageEvents::default())
     })
 }

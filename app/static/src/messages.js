@@ -1,4 +1,4 @@
-async function send_message(message, chat_id){
+export async function send_message(message, chat_id){
     const resp = await fetch("/database/send_message", {
         credentials: "same-origin",
         mode: "same-origin",
@@ -15,7 +15,7 @@ async function send_message(message, chat_id){
 }
 
 
-async function update_message(message, message_id){
+export async function update_message(message, message_id){
     const resp = await fetch("/database/update_message", {
         credentials: "same-origin",
         mode: "same-origin",
@@ -30,7 +30,7 @@ async function update_message(message, message_id){
     }
 }
 
-async function view_message(message_id){
+export async function view_message(message_id){
     const resp = await fetch("/database/view_message", {
         credentials: "same-origin",
         mode: "same-origin",
@@ -45,7 +45,7 @@ async function view_message(message_id){
     }
 }
 
-async function set_message_pinned(message_id, pinned){
+export async function set_message_pinned(message_id, pinned){
     const resp = await fetch("/database/set_message_pinned", {
         credentials: "same-origin",
         mode: "same-origin",
@@ -60,7 +60,7 @@ async function set_message_pinned(message_id, pinned){
     }
 }
 
-async function get_messages(chat_id, previous, limit){
+export async function get_messages(chat_id, previous, limit){
     const resp = await fetch("/database/get_messages", {
         credentials: "same-origin",
         mode: "same-origin",
@@ -76,7 +76,22 @@ async function get_messages(chat_id, previous, limit){
     return await resp.json();
 }
 
-async function delete_message(message_id){
+export async function get_message(message_id){
+    const resp = await fetch("/database/get_message/"+message_id, {
+        credentials: "same-origin",
+        mode: "same-origin",
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+    });
+
+    if (!resp.ok) {
+        console.log("Status: " + resp.status)
+        return {}
+    }
+    return await resp.json();
+}
+
+export async function delete_message(message_id){
     const resp = await fetch("/database/delete_message", {
         credentials: "same-origin",
         mode: "same-origin",
@@ -91,5 +106,3 @@ async function delete_message(message_id){
     }
     return "Sucsess"
 }
-
-export { delete_message, get_messages, send_message, set_message_pinned, update_message, view_message };

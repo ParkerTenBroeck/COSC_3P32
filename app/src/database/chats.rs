@@ -386,7 +386,7 @@ async fn mark_chat_read(db: Db, user: users::UserId, update: Json<ChatId>) -> Re
     let since_the_epoch = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .expect("Time went backwards")
-        .as_secs();
+        .as_millis();
 
     let updated = db
         .run(move |db| {
