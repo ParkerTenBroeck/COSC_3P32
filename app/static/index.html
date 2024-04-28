@@ -5,64 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weee</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-        }
-        .sidebar {
-            height: 100vh;
-            background-color: #f2f2f2;
-            border-right: 1px solid #ccc;
-            overflow-y: auto;
-        }
-        .chat-list {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-        }
-        .chat-list-item {
-            padding: 10px;
-            cursor: pointer;
-            border-bottom: 1px solid #ccc;
-            transition: background-color 0.3s ease;
-        }
-        .chat-list-item:hover {
-            background-color: #ddd;
-        }
-        .settings-menu {
-            background-color: #f9f9f9;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        .chat {
-            flex: 1;
-            padding: 20px;
-            display:flex;
-            flex-direction: column;
-        }
-        .chat-header {
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .chat-messages {
-          height:0;
-            flex-grow: 1;
-            overflow-y: auto;
-            border: 1px solid #ccc;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        .create-chat-menu {
-            background-color: #f9f9f9;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-    </style>
+    <link rel="stylesheet" href="/css/homepage.css"></link>
 </head>
 <body>
     <div class="sidebar">
@@ -73,25 +16,20 @@
             <h3 style="margin-bottom:0;margin-top:5px;text-align: center;">DMs</h3>
             <hr>
             <div id="dm-chats">
-                <!-- <li class="chat-list-item" onclick="showChat(1)">Direct Message 1</li>
-                <li class="chat-list-item" onclick="showChat(2)">Direct Message 2</li> -->
+                <!--Auto gen -->
             </div>
 
 
             <h3 style="margin-bottom:0;margin-top:5px;text-align: center;">Groups</h3>
             <hr>
             <div id="group-chats">
-                <!-- <li class="chat-list-item" onclick="showChat(3)">Chat 1</li>
-                <li class="chat-list-item" onclick="showChat(4)">Chat 2</li>
-                <li class="chat-list-item" onclick="showChat(5)">Chat 3</li> -->
+                <!--Auto gen -->
             </div>
 
             <h3 style="margin-bottom:0;margin-top:5px;text-align: center;">Channels</h3>
             <hr>
             <div id="channel-chats">
-                <!-- <li class="chat-list-item" onclick="showChat(6)">Chat 1</li>
-                <li class="chat-list-item" onclick="showChat(7)">Chat 2</li>
-                <li class="chat-list-item" onclick="showChat(8)">Chat 3</li> -->
+                <!--Auto gen -->
             </div>
         </ul>
     </div>
@@ -105,255 +43,6 @@
         import * as api from "/src/index.js";
         window.api = api;
       </script>
-    <script>
-        function showSettings() {
-            var chatArea = document.getElementById("chatArea");
-            chatArea.innerHTML = `
-                <div class="settings-menu">
-                    <h3>User Settings</h3>
-                    <p>User ID: ${userData.user_id}</p>
-                    <p>Phone Number: ${userData.phone_number}</p>
-                    <p>Name: ${userData.name}</p>
-                    <p>Email: ${userData.email}</p>
-                    <p>Location: ${userData.location}</p>
-                    <p>Username: ${userData.username}</p>
-                    <p>Password: ${userData.password}</p>
-                    <p>Bio: ${userData.bio}</p>
-                    <p>Profile Picture File ID: ${userData.pfp_file_id}</p>
-                    <button onclick="api.users.logout()">Logout</button>
-                </div>`;
-        }
-
-        async function createChat(){
-                
-            await reload_chat_data();
-        }
-
-        function showChatForm(chatType) {
-            var chatNameLabel = "";
-            if (chatType === "DM") {
-                chatNameLabel = "Username/Phone number/Email...";
-            } else {
-                chatNameLabel = "Enter chat name...";
-            }
-            var chatArea = document.getElementById("chatName");
-            chatArea.setAttribute("placeholder", chatNameLabel);
-        }
-
-        function showCreateChat() {
-            var chatArea = document.getElementById("chatArea");
-            chatArea.innerHTML = `
-                <div class="create-chat-menu">
-                    <h3>Create Chat</h3>
-                    <input type="radio" id="dm" name="chatType" value="DM" onclick="showChatForm('DM')">
-                    <label for="dm">Direct Message</label><br>
-                    <input checked="checked" type="radio" id="group" name="chatType" value="Group" onclick="showChatForm('Group')">
-                    <label for="group">Group</label><br>
-                    <input type="radio" id="channel" name="chatType" value="Channel" onclick="showChatForm('Channel')">
-                    <label for="channel">Channel</label><br><br>
-                    <input type="text" id="chatName" class="message-input" placeholder="Enter chat name...">
-                    <button onclick="createChat()">Create Chat</button>
-                </div>`;
-        }
-
-
-        async function createChat() {
-            const type = document.querySelector('input[name="chatType"]:checked').value;
-            var chatName = document.getElementById("chatName").value;
-            
-            var new_id;
-            if (type == "DM"){
-                try{
-                    new_id = await api.contacts.find_user_username(chatName);
-                }catch(e){
-                    try{
-                        new_id = await api.contacts.find_user_phonenumber(chatName);
-                    }catch(e){
-                        try{
-                            new_id = await api.contacts.find_user_email(chatName);
-                        }catch(e){
-                            alert("Cannot find user with: " + chatName);
-                            return;
-                        }
-                    }
-                }
-                try{
-                    new_id = await api.chats.create_dm(new_id);
-                }catch(e){
-                    alert("Cant create DM.. Already made?");
-                    return;
-                }
-            }else if (type == "Group"){
-                try{
-                    new_id = await api.chats.create_group(chatName);
-                }catch(e){
-                    alert("Cant create more groups!");
-                    return;
-                }
-            }else{
-                try{
-                    new_id = await api.chats.create_channel(chatName);
-                }catch(e){
-                    alert("Cant create more channels!");
-                    return;
-                }
-            }   
-
-            await reload_chat_data();
-            document.getElementById("cid"+new_id).onclick();
-        }
-
-        window.userCache  = new Map();
-        async function getUser(user_id){
-          if (window.userCache.get(user_id) == null){
-            window.userCache.set(
-              user_id, 
-              await api.users.get_user(user_id)
-            );
-          }
-          return window.userCache.get(user_id);
-        }
-
-        function sortList(ul){
-            var new_ul = ul.cloneNode(false);
-
-            // Add all lis to an array
-            var lis = [];
-            for(var i = ul.childNodes.length; i--;){
-                if(ul.childNodes[i].nodeName === 'LI')
-                    lis.push(ul.childNodes[i]);
-            }
-
-            // Sort the lis in descending order
-            lis.sort(function(a, b){
-            return parseInt(b.childNodes[0].data , 10) - 
-                    parseInt(a.childNodes[0].data , 10);
-            });
-
-            // Add them into the ul in order
-            for(var i = 0; i < lis.length; i++)
-                new_ul.appendChild(lis[i]);
-            ul.parentNode.replaceChild(new_ul, ul);
-        }
-
-        
-        async function showChat(name, chatData) {
-
-            try{
-                if(window.EventSource != null)
-                window.evtSource.close()
-            }catch(e){}
-
-            var chatArea = document.getElementById("chatArea");
-            chatArea.innerHTML = `
-                <div class="chat-header">${name}</div>
-                <ul style="overflow-x:scroll" class="chat-messages" id="chatMessages">
-                    <!-- Chat messages for ${name} will be displayed here -->
-                </ul>
-                <input type="text" id="messageInput" class="message-input" placeholder="Type your message...">
-                `;
-
-            document.getElementById("messageInput").addEventListener("keypress", (e) => {
-              if (!e.shiftKey && e.keyCode == 13){
-                sendMessage(chatData);
-              }
-            });
-            const evtSource = new EventSource("/database/listen_for_messages/" + chatData.chat_id);
-            evtSource.onmessage = async (e) => {
-                const event = JSON.parse(e.data);
-                if (event.tag == "New"){
-                  var message = await api.messages.get_message(event.id);
-                  addMessage(message);
-                }else if (event.tag == "Deleted"){
-                  deleteMessage(event.id);
-                }else{
-                  var message = await api.messages.get_message(event.id);
-                  updateMessage(message);
-                }
-            };
-
-
-            (await api.messages.get_messages(chatData.chat_id)).slice().reverse().forEach(message => addMessage(message))
-     
-            window.evtSource=evtSource;
-        }
-
-        function deleteMessage(mid){
-          document.getElementById("mid"+mid).outerHTML = "";
-        }
-
-        function updateMessage(message){
-          const element = document.getElementById("mid"+message.message_id);
-          if (element != null){
-            element.innerHTML = generateInner(message);
-          }
-        }
-
-        function generateInner(message){
-          return message.message;
-        }
-
-        function addMessage(message){
-          const chatArea = document.getElementById("chatArea");
-          var chatMessages = document.getElementById("chatMessages");
-          var newMessage = document.createElement("li");
-          newMessage.id = "mid" + message.message_id;
-
-          newMessage.innerHTML = generateInner(message);
-          chatMessages.appendChild(newMessage);
-          document.getElementById("chatMessages").scroll(0, 999999999);
-        }
-
-        async function sendMessage(chatData) {
-            var messageInput = document.getElementById("messageInput");
-            var message = messageInput.value;
-            let num = await api.messages.send_message(message, chatData.chat_id);
-
-            messageInput.value = "";
-        }
-
-        
-
-        async function reload_chat_data(){
-            window.chatData = await api.chats.list_chats();
-
-            const dmArea = document.getElementById("dm-chats");
-            const groupArea = document.getElementById("group-chats");
-            const channelArea = document.getElementById("channel-chats");
-
-            dmArea.innerHTML = "";
-            groupArea.innerHTML = "";
-            channelArea.innerHTML = "";
-
-
-            for (const data of chatData){
-                if (data.seconary != null){
-                    let other_id = data.owner==userData.user_id?data.seconary:data.owner;
-                    let name = await api.users.get_username(other_id);
-                    dmArea.innerHTML += `<li class="chat-list-item" id='cid${data.chat_id}' onclick='showChat(${JSON.stringify(name)}, ${JSON.stringify(data)})'>${name}</li>`;
-                }else if (data.send_priv == 0){
-                    let name = data.name;
-                    groupArea.innerHTML += `<li class="chat-list-item" id='cid${data.chat_id}' onclick='showChat(${JSON.stringify(name)}, ${JSON.stringify(data)})'>${name}</li>`;
-                }else {
-                    let name = data.name;
-                    channelArea.innerHTML += `<li class="chat-list-item" id='cid${data.chat_id}' onclick='showChat(${JSON.stringify(name)}, ${JSON.stringify(data)})'>${name}</li>`;
-                }
-            }
-        }
-
-        async function reload_user_data(){
-            window.userData = await api.users.who_am_i();
-            if (window.userData == null){
-                window.location.href = 'login.html'; // Redirect to login page
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", async function(event){
-            await reload_user_data();
-            await reload_chat_data();
-            showSettings();
-        });
-
-    </script>
+    <script src="/src/homepage.js"></script>
 </body>
 </html>

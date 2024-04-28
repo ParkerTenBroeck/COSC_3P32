@@ -379,6 +379,7 @@ async fn list_chat_members(
             FROM chat_members
             WHERE ?1=(SELECT member_id FROM chat_members WHERE chat_id=?2 AND member_id=?1)
                     AND chat_id=?2
+                    ORDER BY privilage DESC
             ",
             )?
             .query_map(params![user.0, chat.chat_id], |row| {

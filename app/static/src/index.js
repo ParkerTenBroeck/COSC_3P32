@@ -16,7 +16,7 @@ export async function listen(channel_id){
 }
 
 export async function test(){
-    const arrayBuffer = await (await fetch("https://cdn.discordapp.com/attachments/1163024155587911782/1233945288880689172/mrdata2.png?ex=662ef09a&is=662d9f1a&hm=308f86e702022057829816297a450ccc596b9a30013d99636646c44e8655af18&")).arrayBuffer();
+    const arrayBuffer = await (await fetch("https://media.discordapp.net/attachments/1163024155587911782/1233958514343411772/image.png?ex=662efceb&is=662dab6b&hm=f8dcc9a584db06b2f42e37332fb9ded08318006b9484e5a8401fc945a8bf1130&=&format=webp&quality=lossless&width=1100&height=617")).arrayBuffer();
     console.log(arrayBuffer);
     let file_id = await files.upload_file("funny.png", arrayBuffer);
     console.log("/database/attachments/" + file_id + "/funny.png");

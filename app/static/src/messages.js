@@ -8,8 +8,7 @@ export async function send_message(message, chat_id){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return Promise.reject("server")
+        throw resp;
     }
     return await resp.json();
 }
@@ -25,8 +24,7 @@ export async function update_message(message, message_id){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return Promise.reject("server")
+        throw resp;
     }
 }
 
@@ -40,8 +38,7 @@ export async function view_message(message_id){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return {}
+        throw resp;
     }
 }
 
@@ -55,8 +52,7 @@ export async function set_message_pinned(message_id, pinned){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return {}
+        throw resp;
     }
 }
 
@@ -70,8 +66,7 @@ export async function get_messages(chat_id, previous, limit){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return {}
+        throw resp;
     }
     return await resp.json();
 }
@@ -85,8 +80,7 @@ export async function get_message(message_id){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return {}
+        throw resp;
     }
     return await resp.json();
 }
@@ -101,8 +95,6 @@ export async function delete_message(message_id){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return "Error"
+        throw resp;
     }
-    return "Sucsess"
 }

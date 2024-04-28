@@ -1,0 +1,138 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+}
+.sidebar {
+    height: 100vh;
+    background-color: #f2f2f2;
+    border-right: 1px solid #ccc;
+    overflow-y: auto;
+}
+.chat-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+.chat-list-item {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #ccc;
+    transition: background-color 0.3s ease;
+}
+.chat-list-item:hover {
+    background-color: #ddd;
+}
+.settings-menu {
+    background-color: #f9f9f9;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+.chat {
+    flex: 1;
+    padding: 20px;
+    display:flex;
+    flex-direction: column;
+}
+.chat-header {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+.chat-messages {
+  height:0;
+    flex-grow: 1;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+}
+.create-chat-menu {
+    background-color: #f9f9f9;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+/* Style for the message container */
+.message-container {
+    display: flex;
+    margin-bottom: 20px;
+}
+/* Style for the profile picture */
+.pfp {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+/* Style for the message details */
+.message-details {
+    flex-grow: 1;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    padding: 10px;
+    margin-left: 10px;
+}
+/* Style for the username */
+.username {
+    font-weight: bold;
+    color: #7289da;
+}
+/* Style for the date */
+.date {
+    font-size: 0.8em;
+    color: #99aab5;
+    margin-top: 5px;
+}
+/* Style for the message content */
+.message-content {
+    margin-top: 10px;
+    color: #2c2f33;
+}
+/* Style for attachment links */
+.attachments a {
+    color: #7289da;
+    text-decoration: none;
+}
+
+.msg-info{
+  display: flex;
+  flex-direction: row;
+}
+
+/* Style for options container */
+.options {
+    margin-left: auto;
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 0.2s, opacity 0.2s;
+}
+
+/* Show options on hover */
+.message-container:hover .options {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Style for option buttons */
+.options button {
+    background-color: transparent;
+    color: #7289da;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    font-size: 0.8em;
+    transition: background-color 0.3s, color 0.3s;
+}
+/* Hover effect for option buttons */
+.options button:hover {
+    background-color: #7289da;
+    color: #ffffff;
+}

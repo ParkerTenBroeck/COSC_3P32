@@ -7,8 +7,7 @@ async function list_users(){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return Promise.reject("server")
+        throw resp;
     }
     return await resp.json();
 }

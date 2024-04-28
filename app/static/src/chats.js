@@ -10,8 +10,7 @@ async function create_dm(to){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return Promise.reject("server")
+        throw resp;
     }
     return await resp.json();
 }
@@ -28,8 +27,7 @@ async function create_group(name){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return Promise.reject("server")
+        throw resp;
     }
     return await resp.json();
 }
@@ -44,8 +42,7 @@ async function create_channel(name){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return Promise.reject("server")
+        throw resp;
     }
     return await resp.json();
 }
@@ -122,8 +119,7 @@ async function leave_chat(chat_id){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return Promise.reject("server")
+        throw resp;
     }
 }
 
@@ -137,8 +133,7 @@ async function join_chat(chat_id){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return Promise.reject("server")
+        throw resp;
     }
 }
 
@@ -152,8 +147,7 @@ async function delete_chat(chat_id){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return Promise.reject("server")
+        throw resp;
     }
 }
 

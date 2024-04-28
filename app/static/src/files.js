@@ -10,8 +10,7 @@ export async function upload_file(name, contents){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return Promise.reject("server")
+        throw resp;
     }
 
     return await resp.json();
@@ -27,8 +26,7 @@ export async function get_file_with_name(id, name){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return Promise.reject("server")
+        throw resp;
     }
 
     return await resp.blob();
@@ -44,8 +42,7 @@ export async function get_file(id){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return Promise.reject("server")
+        throw resp;
     }
 
     return await resp.blob();

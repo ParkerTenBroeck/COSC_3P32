@@ -8,8 +8,7 @@ export async function add_contact(contact_id) {
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return Promise.reject("server")
+        throw resp;
     }
 }
 
@@ -23,8 +22,7 @@ export async function find_user_email(email){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return Promise.reject("server")
+        throw resp;
     }
 
     return await resp.json();
@@ -40,8 +38,7 @@ export async function find_user_username(email){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return Promise.reject("server")
+        throw resp;
     }
 
     return await resp.json();
@@ -57,8 +54,7 @@ export async function find_user_phone(email){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return Promise.reject("server")
+        throw resp;
     }
 
     return await resp.json();
@@ -74,7 +70,6 @@ export async function delete_contact(contact_id){
     });
 
     if (!resp.ok) {
-        console.log("Status: " + resp.status)
-        return Promise.reject("server")
+        throw resp;
     }
 }

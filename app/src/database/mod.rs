@@ -4,8 +4,12 @@ pub mod contacts;
 pub mod messages;
 pub mod users;
 pub mod files;
+pub mod events;
+
+use std::collections::HashMap;
 
 use rocket::response::Debug;
+use rocket::serde::{Deserialize, Serialize};
 use rocket::{fairing::AdHoc, Build, Rocket};
 use rocket_sync_db_pools::database;
 
@@ -37,11 +41,12 @@ pub fn stage_database() -> AdHoc {
             rocket
         }
         .mount("/database", users::routes())
-        .attach(messages::adhoc())
+        .mount("/database", messages::routes())
         .mount("/database", chats::routes())
         .mount("/", chats::user_routes())
         .mount("/database", admin::routes())
         .mount("/database", contacts::routes())
         .mount("/database", files::routes())
+        .attach(events::adhoc())
     })
 }

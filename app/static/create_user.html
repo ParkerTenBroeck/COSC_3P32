@@ -47,11 +47,11 @@
         jsonData[key] = value;
       });
 
-      const resp = await api.users.create_user(jsonData);
-      if (resp == "Conflict"){
-        alert("Email or Phone Number already exists!");
-      }else{
+      try{
+        const resp = await api.users.create_user(jsonData);
         window.location.href = "/login.html";
+      }catch(e){
+        alert("Email or Phone Number already exists!");
       }
     }
   </script>

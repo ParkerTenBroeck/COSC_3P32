@@ -26,7 +26,7 @@ impl<'r> FromRequest<'r> for UserId {
 }
 
 impl UserId {
-    pub async fn load(self, conn: Db) -> Result<User, rusqlite::Error> {
+    pub async fn load(self, conn: &Db) -> Result<User, rusqlite::Error> {
         conn.run(move |db| {
             db.query_row(
                 "SELECT * FROM users WHERE user_id=?1",
@@ -68,7 +68,7 @@ impl<'r> FromRequest<'r> for User {
             Outcome::Forward(val) => return Outcome::Forward(val),
             _ => unreachable!(),
         };
-        user_id.load(conn).await.or_forward(Status::Unauthorized)
+        user_id.load(&conn).await.or_forward(Status::Unauthorized)
     }
 }
 
@@ -128,59 +128,50 @@ pub(super) async fn new_user(
     }
 }
 
-fn deserialize_optional_field<'de, T, D>(de: D) -> Result<Option<Option<T>>, D::Error>
-where
-    D: rocket::serde::Deserializer<'de>,
-    T: Deserialize<'de>,
-{
-    Deserialize::deserialize(de).map(Some)
-}
-
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
 struct UpdateUser {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    phone_number: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    email: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    location: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    username: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    password: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    bio: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    availability: Option<u8>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(deserialize_with = "deserialize_optional_field")]
-    pfp_file_id: Option<Option<i64>>,
+    phone_number: String,
+    name: String,
+    email: String,
+    location: String,
+    username: String,
+    password: String,
+    bio: String,
+    availability: u8,
+    pfp_file_id: Option<i64>,
 }
 
-#[post("/update_user", data = "<_updates>")]
-async fn update_user(_db: Db, _user: UserId, _updates: Json<UpdateUser>) -> Result<Status> {
-    todo!();
+#[post("/update_user", data = "<updates>")]
+async fn update_user(db: Db, user: UserId, updates: Json<UpdateUser>) -> Result<Status> {
+    let affected = db
+        .run(move |db| {
+            Result::<_, rusqlite::Error>::Ok(db.execute(
+                "
+            UPDATE users
+            SET phone_number=:phone_number, name=:name, email=:email, location=:location, username=:username, password=:password, bio=:bio, availability=:availability, pfp_file_id=:pfp_file_id
+            WHERE user_id=?1
+        ",
+                named_params![
+                    ":user_id": user.0,
+                    ":phone_number": updates.phone_number,
+                    ":name": updates.name,
+                    ":email": updates.email,
+                    ":location": updates.location,
+                    ":username": updates.username,
+                    ":password": updates.password,
+                    ":bio": updates.bio,
+                    ":availability": updates.availability,
+                    ":pfp_file_id": updates.pfp_file_id,
+                ],
+            )?)
+        })
+        .await?;
 
-    // let affected = db
-    //     .run(move |db| {
-    //         Result::<_, rusqlite::Error>::Ok(db.execute(
-    //             "
-    //         UPDATE users
-    //         SET
-    //         WHERE user_id=?1
-    //     ",
-    //             params![user.0],
-    //         )?)
-    //     })
-    //     .await?;
-
-    // match affected {
-    //     1 => Ok(Status::Accepted),
-    //     _ => Ok(Status::NotAcceptable),
-    // }
+    match affected {
+        1 => Ok(Status::Accepted),
+        _ => Ok(Status::NotAcceptable),
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -301,7 +292,6 @@ pub struct SafeUser {
     pub user_id: i64,
     pub display_name: String,
     pub bio: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub pfp_file_id: Option<i64>,
 }
 
