@@ -324,10 +324,10 @@ async function generateInner(message) {
   }
 
   let pfp;
-  if (message.pfp_file_id == null) {
+  if (user.pfp_file_id == null) {
     pfp = "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Default_pfp.svg/2048px-Default_pfp.svg.png"
   } else {
-    pfp = "/database/attachments/" + message.pfp_file_id;
+    pfp = "/database/attachments/" + user.pfp_file_id;
   }
 
   let views = "";
