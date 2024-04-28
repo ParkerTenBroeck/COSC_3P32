@@ -300,8 +300,7 @@ pub struct SafeUser {
     #[serde(skip_deserializing)]
     pub user_id: i64,
     pub display_name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub bio: Option<String>,
+    pub bio: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pfp_file_id: Option<i64>,
 }
@@ -313,7 +312,7 @@ async fn get_user(db: Db, _user: users::UserId, user_id: i64) -> Result<Json<Saf
             conn.query_row(
                 "
             SELECT 
-                users.user_id, users.username users.phone_number users.bio, users.pfp_file_id 
+                username, phone_number, bio, pfp_file_id 
             FROM 
                 users
             WHERE user_id=:user_id
@@ -323,13 +322,13 @@ async fn get_user(db: Db, _user: users::UserId, user_id: i64) -> Result<Json<Saf
                 ],
                 |row| {
                     Ok(SafeUser {
-                        user_id: row.get(0)?,
-                        display_name: match row.get::<_, Option<String>>(1)? {
+                        user_id,
+                        display_name: match row.get::<_, Option<String>>(0)? {
                             Some(name) => name,
-                            None => row.get(2)?,
+                            None => row.get(1)?,
                         },
-                        bio: row.get(3)?,
-                        pfp_file_id: row.get(4)?,
+                        bio: row.get(2)?,
+                        pfp_file_id: row.get(3)?,
                     })
                 },
             )

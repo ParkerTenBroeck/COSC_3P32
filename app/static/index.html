@@ -203,6 +203,17 @@
             document.getElementById("cid"+new_id).onclick();
         }
 
+        window.userCache  = new Map();
+        async function getUser(user_id){
+          if (window.userCache.get(user_id) == null){
+            window.userCache.set(
+              user_id, 
+              await api.users.get_user(user_id)
+            );
+          }
+          return window.userCache.get(user_id);
+        }
+
         function sortList(ul){
             var new_ul = ul.cloneNode(false);
 
