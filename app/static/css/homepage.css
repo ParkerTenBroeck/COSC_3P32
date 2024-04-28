@@ -144,3 +144,24 @@ body {
     background-color: #7289da;
     color: #ffffff;
 }
+
+.dropzone {
+    border: 2px dashed #cccccc;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    margin-top: 20px;
+}
+.dropzone input {
+    display: none;
+}
+.dropzone p {
+    margin: 0;
+}
+
+.settings-menu input {
+    display: inline-block;
+    width: 120px; /* Adjust as needed */
+    margin-right: 10px; /* Adjust as needed */
+    text-align: right;
+}

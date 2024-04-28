@@ -29,7 +29,7 @@ impl UserId {
     pub async fn load(self, conn: &Db) -> Result<User, rusqlite::Error> {
         conn.run(move |db| {
             db.query_row(
-                "SELECT * FROM users WHERE user_id=?1",
+                "SELECT user_id, phone_number, name, email, location, username, password, bio, pfp_file_id FROM users WHERE user_id=?1",
                 params![self.0],
                 |row| {
                     Ok(User {
@@ -41,7 +41,7 @@ impl UserId {
                         username: row.get(5)?,
                         password: row.get(6)?,
                         bio: row.get(7)?,
-                        php_file_id: row.get(8)?,
+                        pfp_file_id: row.get(8)?,
                     })
                 },
             )
@@ -137,8 +137,6 @@ struct UpdateUser {
     username: String,
     password: String,
     bio: String,
-    availability: u8,
-    pfp_file_id: Option<i64>,
 }
 
 #[post("/update_user", data = "<updates>")]
@@ -148,8 +146,8 @@ async fn update_user(db: Db, user: UserId, updates: Json<UpdateUser>) -> Result<
             Result::<_, rusqlite::Error>::Ok(db.execute(
                 "
             UPDATE users
-            SET phone_number=:phone_number, name=:name, email=:email, location=:location, username=:username, password=:password, bio=:bio, pfp_file_id=:pfp_file_id
-            WHERE user_id=?1
+            SET phone_number=:phone_number, name=:name, email=:email, location=:location, username=:username, password=:password, bio=:bio
+            WHERE user_id=:user_id
         ",
                 named_params![
                     ":user_id": user.0,
@@ -160,7 +158,31 @@ async fn update_user(db: Db, user: UserId, updates: Json<UpdateUser>) -> Result<
                     ":username": updates.username,
                     ":password": updates.password,
                     ":bio": updates.bio,
-                    ":pfp_file_id": updates.pfp_file_id,
+                ],
+            )?)
+        })
+        .await?;
+
+    match affected {
+        1 => Ok(Status::Accepted),
+        _ => Ok(Status::NotAcceptable),
+    }
+}
+
+#[post("/update_user_pfp/<pfp_id>")]
+async fn update_user_pfp(db: Db, user: UserId, pfp_id: i64) -> Result<Status> {
+    // println!("{pfp_id}");
+    let affected = db
+        .run(move |db| {
+            Result::<_, rusqlite::Error>::Ok(db.execute(
+                "
+            UPDATE users
+            SET pfp_file_id=:pfp_file_id
+            WHERE user_id=:user_id
+        ",
+                named_params![
+                    ":user_id": user.0,
+                    ":pfp_file_id": pfp_id,
                 ],
             )?)
         })
@@ -234,7 +256,7 @@ pub struct User {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub bio: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub php_file_id: Option<i64>,
+    pub pfp_file_id: Option<i64>,
 }
 
 #[delete("/delete_account")]
@@ -335,6 +357,7 @@ pub fn routes() -> Vec<Route> {
         delete_account,
         update_user,
         get_username,
-        get_user
+        get_user,
+        update_user_pfp
     ]
 }

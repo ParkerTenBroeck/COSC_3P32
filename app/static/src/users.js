@@ -26,8 +26,19 @@ export async function update_user(user) {
     if (!resp.ok) {
         throw resp;
     }
+}
 
-    return await resp.json();
+export async function update_user_pfp(pfp_id) {
+    let resp = await fetch('/database/update_user_pfp/' + pfp_id, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+    });
+
+    if (!resp.ok) {
+        throw resp;
+    }
 }
 
 

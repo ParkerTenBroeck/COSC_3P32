@@ -24,7 +24,7 @@ async fn list_users(db: Db) -> Result<Json<Vec<User>>> {
                         username: row.get(5)?,
                         password: row.get(6)?,
                         bio: row.get(7)?,
-                        php_file_id: row.get(8)?,
+                        pfp_file_id: row.get(8)?,
                     })
                 })?
                 .collect::<Result<Vec<User>, _>>()
