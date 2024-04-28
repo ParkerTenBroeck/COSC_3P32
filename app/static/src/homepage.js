@@ -86,7 +86,6 @@ async function reloadProfile(){
 
   for (key of Object.keys(userData)){
       const el = document.getElementById(key)
-      console.log(key, userData[key]);
       if(el != null){
           el.value = userData[key]
       }
@@ -100,7 +99,6 @@ async function updateProfile() {
   
   var object = {};
     formData.forEach((value, key) => object[key] = value);  
-  console.log(object);
 
   api.users.update_user(object);
 
