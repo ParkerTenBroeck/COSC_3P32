@@ -69,5 +69,7 @@ export async function test(){
 
     let cid = await chats.create_channel("asldkajsdl");
     await messages.send_message("asdjhkasdjh", cid);
+    await messages.send_message("aaaaaaaaaaaaa", cid);
+    await messages.send_message("asdasdasdasd", cid);
 
 }
