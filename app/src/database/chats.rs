@@ -1,6 +1,7 @@
 use std::time::SystemTime;
 
 use crate::database::Db;
+use rocket::response::Redirect;
 use rocket::serde::{json::Json, Deserialize, Serialize};
 use rocket::{get, post, routes};
 
@@ -144,10 +145,52 @@ async fn create_channel(
     Ok(val.into())
 }
 
+
+#[get("/join_chat/<_chat_id>", rank = 2)]
+async fn join_chat_user_logedout(_chat_id: i64) -> &'static str {
+    "You must be logged in to join a chat!"
+}
+
 #[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct ChatId {
     pub chat_id: i64,
+}
+
+#[get("/join_chat/<chat_id>")]
+async fn join_chat_user(db: Db, user: users::UserId, chat_id: i64) -> Result<Result<Redirect, &'static str>> {
+    let affected =
+        db.0.run(move |db| {
+            db.execute(
+                "
+            INSERT INTO chat_members
+                (chat_id, member_id, privilage)
+            SELECT
+                ?1, ?2, 0
+            WHERE 
+            100>(
+                SELECT COUNT(*) FROM 
+                    (SELECT chat_id FROM chats WHERE secondary_owner IS NULL) t1
+                LEFT JOIN
+                    chat_members
+                ON (t1.chat_id=chat_members.chat_id)
+                WHERE member_id=?1
+            ) AND
+            (
+                (SELECT SUM(max_members) FROM chats WHERE chat_id=?1)
+                > 
+                (SELECT COUNT(*) FROM chat_members WHERE chat_id=?1)
+            )
+            ",
+                params![chat_id, user.0],
+            )
+        })
+        .await?;
+
+    match affected {
+        1 => Ok(Ok(Redirect::to("/"))),
+        _ => Ok(Err("Cannot join group, Invalid or max chat limit reached")),
+    }
 }
 
 #[post("/join_chat", data = "<chat>")]
@@ -404,6 +447,13 @@ async fn mark_chat_read(db: Db, user: users::UserId, update: Json<ChatId>) -> Re
         1 => Ok(Status::Accepted),
         _ => Ok(Status::NotAcceptable),
     }
+}
+
+pub fn user_routes() -> Vec<rocket::Route>{
+    routes![
+        join_chat_user,
+        join_chat_user_logedout
+    ]
 }
 
 pub fn routes() -> Vec<rocket::Route> {

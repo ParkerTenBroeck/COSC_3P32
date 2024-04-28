@@ -294,6 +294,51 @@ async fn get_username(db: Db, _user: users::UserId, user_id: i64) -> Result<Stri
     Ok(username)
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(crate = "rocket::serde")]
+pub struct SafeUser {
+    #[serde(skip_deserializing)]
+    pub user_id: i64,
+    pub display_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bio: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pfp_file_id: Option<i64>,
+}
+
+#[get("/get_user/<user_id>")]
+async fn get_user(db: Db, _user: users::UserId, user_id: i64) -> Result<Json<SafeUser>> {
+    let user = db
+        .run(move |conn| {
+            conn.query_row(
+                "
+            SELECT 
+                users.user_id, users.username users.phone_number users.bio, users.pfp_file_id 
+            FROM 
+                users
+            WHERE user_id=:user_id
+            ",
+                named_params![
+                    ":user_id": user_id
+                ],
+                |row| {
+                    Ok(SafeUser {
+                        user_id: row.get(0)?,
+                        display_name: match row.get::<_, Option<String>>(1)? {
+                            Some(name) => name,
+                            None => row.get(2)?,
+                        },
+                        bio: row.get(3)?,
+                        pfp_file_id: row.get(4)?,
+                    })
+                },
+            )
+        })
+        .await?;
+
+    Ok(Json(user))
+}
+
 pub fn routes() -> Vec<Route> {
     routes![
         new_user,
@@ -302,6 +347,7 @@ pub fn routes() -> Vec<Route> {
         logout,
         delete_account,
         update_user,
-        get_username
+        get_username,
+        get_user
     ]
 }

@@ -96,3 +96,19 @@ export async function get_username(user_id){
 
     return await resp.text();
 }
+
+export async function get_user(user_id){
+    const resp = await fetch("/database/get_user/"+user_id, {
+        credentials: "same-origin",
+        mode: "same-origin",
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+    });
+
+    if (!resp.ok) {
+        console.log("Status: " + resp.status)
+        return Promise.reject("server")
+    }
+
+    return await resp.text();
+}

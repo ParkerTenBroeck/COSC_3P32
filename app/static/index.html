@@ -249,21 +249,46 @@
             });
             const evtSource = new EventSource("/database/listen_for_messages/" + chatData.chat_id);
             evtSource.onmessage = async (e) => {
-                var message = await api.messages.get_message(JSON.parse(e.data).id);
-                addMessage(message);
+                const event = JSON.parse(e.data);
+                if (event.tag == "New"){
+                  var message = await api.messages.get_message(event.id);
+                  addMessage(message);
+                }else if (event.tag == "Deleted"){
+                  deleteMessage(event.id);
+                }else{
+                  var message = await api.messages.get_message(event.id);
+                  updateMessage(message);
+                }
             };
-            for (message of await api.messages.get_messages(chatData.chat_id)){
-              addMessage(message);
-            }
+
+
+            (await api.messages.get_messages(chatData.chat_id)).slice().reverse().forEach(message => addMessage(message))
+     
             window.evtSource=evtSource;
-            // document.getElementById("chatMessages").scroll(0, 99999999999);
+        }
+
+        function deleteMessage(mid){
+          document.getElementById("mid"+mid).outerHTML = "";
+        }
+
+        function updateMessage(message){
+          const element = document.getElementById("mid"+message.message_id);
+          if (element != null){
+            element.innerHTML = generateInner(message);
+          }
+        }
+
+        function generateInner(message){
+          return message.message;
         }
 
         function addMessage(message){
           const chatArea = document.getElementById("chatArea");
           var chatMessages = document.getElementById("chatMessages");
           var newMessage = document.createElement("li");
-          newMessage.textContent = message.message;
+          newMessage.id = "mid" + message.message_id;
+
+          newMessage.innerHTML = generateInner(message);
           chatMessages.appendChild(newMessage);
           document.getElementById("chatMessages").scroll(0, 999999999);
         }
@@ -273,9 +298,7 @@
             var message = messageInput.value;
             let num = await api.messages.send_message(message, chatData.chat_id);
 
-
-            // Here you can implement sending the message to the server or perform any other action
-            messageInput.value = ""; // Clear the input field after sending the message
+            messageInput.value = "";
         }
 
         

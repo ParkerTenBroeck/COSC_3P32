@@ -311,7 +311,7 @@ async fn get_messages(
             chat_id=:chat_id
             AND
             :user_id IN (SELECT member_id FROM chat_members WHERE chat_id=:chat_id)
-        ORDER BY posted ASC, message_id ASC
+        ORDER BY message_id DESC, posted DESC
         LIMIT :limit OFFSET :offset",
             )?
             .query_map(
