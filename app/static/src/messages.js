@@ -29,12 +29,11 @@ export async function update_message(message, message_id){
 }
 
 export async function view_message(message_id){
-    const resp = await fetch("/database/view_message", {
+    const resp = await fetch("/database/view_message/"+message_id, {
         credentials: "same-origin",
         mode: "same-origin",
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({message_id: message_id})
     });
 
     if (!resp.ok) {

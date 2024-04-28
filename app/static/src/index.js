@@ -42,5 +42,7 @@ export async function test(){
     await chats.join_chat(group_id);
     await messages.send_message("hiiii!", group_id);
 
-    await chats.create_channel("asldkajsdl");
+    let cid = await chats.create_channel("asldkajsdl");
+    await messages.send_message("asdjhkasdjh", cid);
+
 }

@@ -103,9 +103,9 @@ pub(super) async fn new_user(
             conn.query_row(
                 "
             INSERT INTO users 
-                (phone_number, name, email, location, username, password, availability) 
+                (phone_number, name, email, location, username, password) 
             VALUES 
-                (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+                (?1, ?2, ?3, ?4, ?5, ?6)
             RETURNING user_id",
                 params![
                     create_user.phone_number,
@@ -114,7 +114,6 @@ pub(super) async fn new_user(
                     create_user.location,
                     create_user.username,
                     create_user.password,
-                    2
                 ],
                 |r| r.get::<_, i64>(0),
             )
@@ -149,7 +148,7 @@ async fn update_user(db: Db, user: UserId, updates: Json<UpdateUser>) -> Result<
             Result::<_, rusqlite::Error>::Ok(db.execute(
                 "
             UPDATE users
-            SET phone_number=:phone_number, name=:name, email=:email, location=:location, username=:username, password=:password, bio=:bio, availability=:availability, pfp_file_id=:pfp_file_id
+            SET phone_number=:phone_number, name=:name, email=:email, location=:location, username=:username, password=:password, bio=:bio, pfp_file_id=:pfp_file_id
             WHERE user_id=?1
         ",
                 named_params![
@@ -161,7 +160,6 @@ async fn update_user(db: Db, user: UserId, updates: Json<UpdateUser>) -> Result<
                     ":username": updates.username,
                     ":password": updates.password,
                     ":bio": updates.bio,
-                    ":availability": updates.availability,
                     ":pfp_file_id": updates.pfp_file_id,
                 ],
             )?)

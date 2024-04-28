@@ -154,7 +154,7 @@ async function showChat(name, chatData) {
     const eventMap = new Map();
     eventMap.set("NewMessage", async (e) => {
       var message = await api.messages.get_message(e.id);
-      addMessageEvent(message);
+      addMessageEvent(message, chatData);
     });
     eventMap.set("MessageDeleted", async (e) => {
       deleteMessageEvent(e.id);
@@ -179,8 +179,7 @@ async function showChat(name, chatData) {
         (eventMap.get(event.tag))(event);
     };
 
-
-    (await api.messages.get_messages(chatData.chat_id)).slice().reverse().forEach(message => addMessageEvent(message))
+    (await api.messages.get_messages(chatData.chat_id)).slice().reverse().forEach(message => addMessageEvent(message, chatData))
 
     window.evtSource=evtSource;
 }
@@ -193,10 +192,10 @@ function deleteMessageEvent(mid){
   document.getElementById("mid"+mid).outerHTML = "";
 }
 
-function updateMessageEvent(message){
+async function updateMessageEvent(message){
   const element = document.getElementById("mid"+message.message_id);
   if (element != null){
-    element.innerHTML = generateInner(message);
+    element.innerHTML = await generateInner(message);
   }
 }
 
@@ -239,6 +238,11 @@ async function generateInner(message){
   }else{
     pfp = "/database/attachments/" + message.pfp_file_id; 
   }
+
+  let views = "";
+  if(message.views != null){
+    views = `<span class="views">views: ${message.views}</span>`
+  }
   
 
   return `
@@ -252,6 +256,7 @@ async function generateInner(message){
           <span class="username">${user.display_name}</span>
           <!-- Date uploaded -->
           ${date}
+          ${views}
 
           <!-- Options -->
           <div class="options">
@@ -269,15 +274,19 @@ async function generateInner(message){
   </div>`;
 }
 
-async function addMessageEvent(message){
-  const chatArea = document.getElementById("chatArea");
-  var chatMessages = document.getElementById("chatMessages");
-  var newMessage = document.createElement("div");
-  newMessage.id = "mid" + message.message_id;
+async function addMessageEvent(message, chatData){
 
-  newMessage.innerHTML = await generateInner(message);
-  chatMessages.appendChild(newMessage);
-  document.getElementById("chatMessages").scroll(0, 999999999);
+    const chatArea = document.getElementById("chatArea");
+    var chatMessages = document.getElementById("chatMessages");
+    var newMessage = document.createElement("div");
+    newMessage.id = "mid" + message.message_id;
+
+    newMessage.innerHTML = await generateInner(message);
+    chatMessages.appendChild(newMessage);
+    document.getElementById("chatMessages").scroll(0, 999999999);
+    if (chatData.tracks_views){
+        await api.messages.view_message(message.message_id);
+    }
 }
 
 async function sendMessage(chatData) {
@@ -324,8 +333,13 @@ async function reload_user_data(){
     }
 }
 
+async function user_event_listener(){
+
+}
+
 document.addEventListener("DOMContentLoaded", async function(event){
     await reload_user_data();
     await reload_chat_data();
+    await user_event_listener();
     showSettings();
 });

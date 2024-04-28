@@ -159,24 +159,29 @@ async fn update_message(
     Ok(Status::Accepted)
 }
 
-#[post("/view_message", data = "<update>")]
-async fn view_message(db: Db, _user: users::UserId, update: Json<MessageId>) -> Result<Status> {
-    let updated = db
+#[post("/view_message/<message_id>")]
+async fn view_message(db: Db, user: users::UserId, message_id: i64, events: &State<ChatEvents>) -> Result<Status> {
+    
+    let chat_id: i64 = db
         .run(move |db| {
-            db.execute(
+            db.query_row(
                 "
                 UPDATE messages
-                SET views=views+1
-                WHERE message_id=?2
+                SET views=IFNULL(views+1, 1)
+                WHERE message_id=:message_id
+                AND chat_id IN (SELECT chat_id FROM chat_members WHERE member_id=:user_id)
+                AND TRUE=(SELECT track_views FROM chats WHERE messages.chat_id=chats.chat_id)
+                RETURNING chat_id
             ",
-                params![update.message_id],
+                named_params![
+                    ":user_id": user.0, 
+                    ":message_id": message_id],
+            |row| row.get(0)
             )
         })
         .await?;
-    match updated {
-        1 => Ok(Status::Accepted),
-        _ => Ok(Status::NotAcceptable),
-    }
+    events.event(chat_id, ChatEvent::MessageEdited(message_id)).await;
+    Ok(Status::Accepted)
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize)]

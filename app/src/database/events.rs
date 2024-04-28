@@ -1,15 +1,68 @@
+use rocket::http::Status;
 use rocket::response::stream::{Event, EventStream};
 use rocket::serde::{Deserialize, Serialize};
 use rocket::{get, routes, State};
 
 use rocket_sync_db_pools::rusqlite;
+use rusqlite::named_params;
 
 use super::*;
 
 #[get("/chat_events/<chat_id>")]
-fn chat_events(shutdown: rocket::Shutdown, listeners: &State<ChatEvents>, chat_id: i64) -> EventStream![Event + '_] {
+fn chat_events(db: Db, shutdown: rocket::Shutdown, user: users::UserId, listeners: &State<ChatEvents>, chat_id: i64) -> EventStream![Event + '_] {
+    
     EventStream! {
+        
+        let res: Result<i64, _> = db.run(move |db|{
+            db.query_row("
+                SELECT member_id FROM chat_members WHERE member_id=:user_id AND chat_id=:chat_id
+            ", named_params! [
+                ":user_id": user.0,
+                ":chat_id": chat_id
+            ],
+            |row| row.get(0))
+        }).await;
+
+        drop(db);
+        match res{
+            Ok(_) => {}
+            Err(_) => {
+                return;
+            }
+        }
+
         let mut channel_updates = listeners.listen(chat_id).await;
+        let mut shutdown = std::pin::pin!(shutdown);
+        let user_id = user.0;
+        
+        loop {
+            rocket::tokio::select! {
+                _ = shutdown.as_mut() => {break}
+                val = channel_updates.recv() => {
+                    match val{
+                        Some(ChatEvent::UserLeft(uid)) if uid == user_id => break,
+                        Some(val) => yield Event::json(&val),
+                        _ => break
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[get("/user_events")]
+fn user_events(db: Db, shutdown: rocket::Shutdown, user: users::UserId, events: &State<UserEvents>) -> EventStream![Event + '_] {
+
+    EventStream! {
+
+        let updated = db.run(move |db|{
+            db.execute("UPDATE users SET availability=1 WHERE user_id=:user_id", named_params! [":user_id": user.0])
+        }).await.unwrap_or(0);
+        if updated != 0{
+            return;
+        }
+       
+        let mut channel_updates = events.listen(user.0).await;
         let mut shutdown = std::pin::pin!(shutdown);
         
         loop {
@@ -23,6 +76,13 @@ fn chat_events(shutdown: rocket::Shutdown, listeners: &State<ChatEvents>, chat_i
                     }
                 }
             }
+        }
+
+        let updated = db.run(move |db|{
+            db.execute("UPDATE users SET availability=0 WHERE user_id=:user_id", named_params! [":user_id": user.0])
+        }).await.unwrap_or(0);
+        if updated != 0{
+            return;
         }
     }
 }
@@ -99,7 +159,8 @@ pub fn adhoc() -> AdHoc {
         rocket.mount(
             "/database",
             routes![
-                chat_events
+                chat_events,
+                user_events
             ],
         )
         .manage(ChatEvents::default())

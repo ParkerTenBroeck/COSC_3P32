@@ -13,7 +13,7 @@ CREATE TABLE users (
     username VARCHAR(50) NULL CHECK(length(name) >= 3) UNIQUE,
     password VARCHAR(50) NOT NULL CHECK(length(name) >= 3),
     bio VARCHAR(250) NOT NULL DEFAULT "",
-    availability TINYINT NOT NULL,
+    availability TINYINT NOT NULL DEFAULT 0,
     pfp_file_id INTEGER REFERENCES files(file_id)
 );
 

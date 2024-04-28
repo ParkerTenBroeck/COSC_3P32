@@ -84,7 +84,15 @@ body {
 .date {
     font-size: 0.8em;
     color: #99aab5;
-    margin-top: 5px;
+    margin-top: 3px;
+    margin-left: 4px;
+}
+/* Style for the date */
+.views {
+    font-size: 0.8em;
+    color: #99aab5;
+    margin-top: 3px;
+    margin-left: 4px;
 }
 /* Style for the message content */
 .message-content {
