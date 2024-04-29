@@ -1,4 +1,4 @@
-<mxfile host="Electron" modified="2024-04-29T19:30:08.575Z" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/24.2.5 Chrome/120.0.6099.109 Electron/28.1.0 Safari/537.36" etag="QBWy835RxPncwcoby7n7" version="24.2.5" type="device">
+<mxfile host="Electron" modified="2024-04-29T19:34:59.371Z" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/24.2.5 Chrome/120.0.6099.109 Electron/28.1.0 Safari/537.36" etag="dR8trpq6ZBEyUa7eGLmN" version="24.2.5" type="device">
   <diagram name="Page-1" id="mNlTKarFjd3dJtKIq2hN">
     <mxGraphModel dx="989" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -161,13 +161,13 @@
           <mxGeometry x="340" y="530" width="80" height="30" as="geometry" />
         </mxCell>
         <mxCell id="opB0nAplSwR7m2lDw3YQ-22" value="message" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-          <mxGeometry x="405" y="665" width="80" height="30" as="geometry" />
+          <mxGeometry x="405" y="640" width="80" height="30" as="geometry" />
         </mxCell>
         <mxCell id="opB0nAplSwR7m2lDw3YQ-27" value="&lt;span style=&quot;text-align: left;&quot;&gt;posted&lt;/span&gt;" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-          <mxGeometry x="420" y="620" width="80" height="30" as="geometry" />
+          <mxGeometry x="409" y="600" width="80" height="30" as="geometry" />
         </mxCell>
         <mxCell id="opB0nAplSwR7m2lDw3YQ-28" value="&lt;span style=&quot;text-align: left;&quot;&gt;last_edited&lt;/span&gt;" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-          <mxGeometry x="405" y="570" width="80" height="30" as="geometry" />
+          <mxGeometry x="380" y="560" width="80" height="30" as="geometry" />
         </mxCell>
         <mxCell id="opB0nAplSwR7m2lDw3YQ-32" value="sent_in" style="shape=rhombus;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;" parent="1" vertex="1">
           <mxGeometry x="409" y="300" width="120" height="60" as="geometry" />
@@ -288,6 +288,9 @@
         </mxCell>
         <mxCell id="kUNzuxK8KsiVCzqCgAi--23" value="group_links" style="shape=rhombus;perimeter=rhombusPerimeter;whiteSpace=wrap;html=1;align=center;" vertex="1" parent="1">
           <mxGeometry x="665.5" y="610" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="kUNzuxK8KsiVCzqCgAi--27" value="overlap: no&lt;div&gt;covering: yes&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="590" y="270" width="90" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
