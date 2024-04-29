@@ -10,11 +10,30 @@ pn    -> id, pn, n, e, l, uname, b, a, p
 e     -> id, pn, n, e, l, uname, b, a, p
 uname -> id, pn, n, e, l, uname, b, a, p
 
+ID    -> ID, PN, N, E, L, UNAME, B, A, P; PN    -> ID, PN, N, E, L, UNAME, B, A, P; E     -> ID, PN, N, E, L, UNAME, B, A, P; UNAME -> ID, PN, N, E, L, UNAME, B, A, P;
+R(ID, PN, N, E, L, UNAME, B, A, P)
+
+{ID}+ = {A, B, E, L, N, P, ID, PN, UNAME} <--- Minimum candidate key
+{PN}+ = {A, B, E, L, N, P, ID, PN, UNAME} <--- Minimum candidate key
+{E}+ = {A, B, E, L, N, P, ID, PN, UNAME} <--- Minimum candidate key
+{UNAME}+ = {A, B, E, L, N, P, ID, PN, UNAME} <--- Minimum candidate key
+
+in 1 NF
+in 2nf -> no composite minimum keys
+in 3nf
+in BCNF -> left hand side is a superkey (or min key in this case)
+
+---------------------------------------------------------------------------------------------
+
 Contacts(**<ins>user_id: INTEGER, contact_user_id</ins>**)
 
 C(uid, cuid)
 
 composite key
+
+in BCNF
+
+---------------------------------------------------------------------------------------------
 
 Group(**<ins>group_id</ins>**, group_name: STRING, owner: user_id)
 
@@ -22,10 +41,36 @@ G(gid, n, o)
 
 gid -> n, o
 
+---------------------------------------------------------------------------------------------
+
 GroupMembers(**<ins>group_id, user_id</ins>**, privilege)
 
 GM(gid, uid, p)
 
 gid, uid -> p
+
+---------------------------------------------------------------------------------------------
+
+ChannelPins(**<ins>chanel_id, message_id</ins>**)
+
+CP(cid, mid)
+
+composite key
+
+---------------------------------------------------------------------------------------------
+
+Messages(**<ins>message_id</ins>**, owner: user_id, content: Data, type: Type, date: Date, last_edited: Option<Date>)
+
+M(m, u, c, t, d, l)
+
+m -> m, u, c, t, d, l
+
+---------------------------------------------------------------------------------------------
+
+ChannelMessages(**<ins>chanel_id, message_id</ins>**, views: INTEGER)
+
+---------------------------------------------------------------------------------------------
+
+PrivateMessages(**<ins>message_id, contact_user_id</ins>**)
 
 
