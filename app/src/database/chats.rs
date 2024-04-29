@@ -1,6 +1,7 @@
 use std::time::SystemTime;
 
 use crate::database::Db;
+use crate::make_id;
 use rocket::response::Redirect;
 use rocket::serde::{json::Json, Deserialize, Serialize};
 use rocket::{get, post, routes};
@@ -12,14 +13,14 @@ use rocket::{delete, http::Status};
 
 use super::*;
 
-#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
-#[serde(crate = "rocket::serde")]
-struct CreateDM {
-    other: i64,
-}
+use super::users::*;
 
-#[post("/create_dm", data = "<dm>")]
-async fn create_dm(db: Db, user: users::UserId, dm: Json<CreateDM>) -> Result<Json<i64>> {
+make_id!(ChatId);
+
+
+
+#[post("/create_dm/<other>")]
+async fn create_dm(db: Db, user: UserLoggedIn, other: UserId) -> Result<Json<i64>> {
     let val = db.run(move |db|{
             let tran = db.transaction()?;
 
@@ -30,19 +31,19 @@ async fn create_dm(db: Db, user: users::UserId, dm: Json<CreateDM>) -> Result<Js
                 ?1, ?2, 0, FALSE, 2
             WHERE NOT EXISTS 
                 (SELECT 1 FROM chats WHERE (primary_owner=?1 AND secondary_owner=?2) OR (primary_owner=?2 AND secondary_owner=?1))
-            RETURNING chat_id", params![user.0, dm.other], |row| row.get(0))?;
+            RETURNING chat_id", params![user, other], |row| row.get(0))?;
 
             tran.execute("
             INSERT INTO chat_members
                 (chat_id, member_id, privilage)
             VALUES
-                (?1, ?2, 255)", params![chat_id, user.0])?;
+                (?1, ?2, 255)", params![chat_id, user])?;
 
             tran.execute("
             INSERT INTO chat_members
                 (chat_id, member_id, privilage)
             VALUES
-                (?1, ?2, 255)", params![chat_id, dm.other])?;
+                (?1, ?2, 255)", params![chat_id, other])?;
 
             tran.commit()?;
 
@@ -58,7 +59,7 @@ struct CreateGroup {
 }
 
 #[post("/create_group", data = "<group>")]
-async fn create_group(db: Db, user: users::UserId, group: Json<CreateGroup>) -> Result<Json<i64>> {
+async fn create_group(db: Db, user: UserLoggedIn, group: Json<CreateGroup>) -> Result<Json<i64>> {
     let val = db
         .run(move |db| {
             let tran = db.transaction()?;
@@ -78,7 +79,7 @@ async fn create_group(db: Db, user: users::UserId, group: Json<CreateGroup>) -> 
                 WHERE member_id=?1
             )
             RETURNING chat_id",
-                params![user.0, group.name],
+                params![user, group.name],
                 |row| row.get(0),
             )?;
 
@@ -88,7 +89,7 @@ async fn create_group(db: Db, user: users::UserId, group: Json<CreateGroup>) -> 
                 (chat_id, member_id, privilage)
             VALUES
                 (?1, ?2, 255)",
-                params![chat_id, user.0],
+                params![chat_id, user],
             )?;
 
             tran.commit()?;
@@ -102,7 +103,7 @@ async fn create_group(db: Db, user: users::UserId, group: Json<CreateGroup>) -> 
 #[post("/create_channel", data = "<group>")]
 async fn create_channel(
     db: Db,
-    user: users::UserId,
+    user: UserLoggedIn,
     group: Json<CreateGroup>,
 ) -> Result<Json<i64>> {
     let val = db
@@ -124,7 +125,7 @@ async fn create_channel(
                 WHERE member_id=?1
             )
             RETURNING chat_id",
-                params![user.0, group.name],
+                params![user, group.name],
                 |row| row.get(0),
             )?;
 
@@ -134,7 +135,7 @@ async fn create_channel(
                 (chat_id, member_id, privilage)
             VALUES
                 (?1, ?2, 255)",
-                params![chat_id, user.0],
+                params![chat_id, user],
             )?;
 
             tran.commit()?;
@@ -151,14 +152,8 @@ async fn join_chat_user_logedout(_chat_id: i64) -> &'static str {
     "You must be logged in to join a chat!"
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
-#[serde(crate = "rocket::serde")]
-pub struct ChatId {
-    pub chat_id: i64,
-}
-
 #[get("/join_chat/<chat_id>")]
-async fn join_chat_user(db: Db, user: users::UserId, chat_id: i64) -> Result<Result<Redirect, &'static str>> {
+async fn join_chat_user(db: Db, user: UserLoggedIn, chat_id: i64) -> Result<Result<Redirect, &'static str>> {
     let affected =
         db.0.run(move |db| {
             db.execute(
@@ -182,7 +177,7 @@ async fn join_chat_user(db: Db, user: users::UserId, chat_id: i64) -> Result<Res
                 (SELECT COUNT(*) FROM chat_members WHERE chat_id=?1)
             )
             ",
-                params![chat_id, user.0],
+                params![chat_id, user],
             )
         })
         .await?;
@@ -193,8 +188,8 @@ async fn join_chat_user(db: Db, user: users::UserId, chat_id: i64) -> Result<Res
     }
 }
 
-#[post("/join_chat", data = "<chat>")]
-async fn join_chat(db: Db, user: users::UserId, chat: Json<ChatId>) -> Result<Status> {
+#[post("/join_chat/<chat>")]
+async fn join_chat(db: Db, user: UserLoggedIn, chat: ChatId) -> Result<Status> {
     let affected =
         db.0.run(move |db| {
             db.execute(
@@ -218,7 +213,7 @@ async fn join_chat(db: Db, user: users::UserId, chat: Json<ChatId>) -> Result<St
                 (SELECT COUNT(*) FROM chat_members WHERE chat_id=?1)
             )
             ",
-                params![chat.chat_id, user.0],
+                params![chat, user],
             )
         })
         .await?;
@@ -229,8 +224,8 @@ async fn join_chat(db: Db, user: users::UserId, chat: Json<ChatId>) -> Result<St
     }
 }
 
-#[post("/leave_chat", data = "<chat>")]
-async fn leave_chat(db: Db, user: users::UserId, chat: Json<ChatId>) -> Result<Status> {
+#[post("/leave_chat/<chat>")]
+async fn leave_chat(db: Db, user: UserLoggedIn, chat: ChatId) -> Result<Status> {
     let num = db
         .run(move |db| {
             db.execute(
@@ -254,7 +249,7 @@ async fn leave_chat(db: Db, user: users::UserId, chat: Json<ChatId>) -> Result<S
                 WHERE 
                     chats.chat_id=?1
             ), TRUE)",
-                params![chat.chat_id, user.0],
+                params![chat, user],
             )
         })
         .await?;
@@ -265,8 +260,8 @@ async fn leave_chat(db: Db, user: users::UserId, chat: Json<ChatId>) -> Result<S
     }
 }
 
-#[delete("/delete_chat", data = "<chat>")]
-async fn delete_chat(db: Db, user: users::UserId, chat: Json<ChatId>) -> Result<Status> {
+#[delete("/delete_chat/<chat>")]
+async fn delete_chat(db: Db, user: UserLoggedIn, chat: ChatId) -> Result<Status> {
     let affected =
         db.0.run(move |db| {
             db.execute(
@@ -275,7 +270,7 @@ async fn delete_chat(db: Db, user: users::UserId, chat: Json<ChatId>) -> Result<
                 WHERE
                 chat_id = ?2 AND (primary_owner=?1 OR IFNULL(secondary_owner=?1, FALSE))
             ",
-                params![user.0, chat.chat_id],
+                params![user, chat],
             )
         })
         .await?;
@@ -289,15 +284,15 @@ async fn delete_chat(db: Db, user: users::UserId, chat: Json<ChatId>) -> Result<
 #[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
 struct UpdatePerm {
-    chat_id: i64,
-    user_id: i64,
+    chat_id: ChatId,
+    user_id: UserId,
     new_perm: u8,
 }
 
 #[delete("/update_chat_member_perm", data = "<updated>")]
 async fn update_chat_member_perm(
     db: Db,
-    user: users::UserId,
+    user: UserLoggedIn,
     updated: Json<UpdatePerm>,
 ) -> Result<Status> {
     let affected = db.0.run(move |db|{
@@ -308,7 +303,7 @@ async fn update_chat_member_perm(
                 chat_id=?1 AND member_id=?2 
                 AND ?3<(SELECT SUM(chat_members) FROM chat_members WHERE chat_id=?1 AND member_id=?4)
                 AND privilage<(SELECT SUM(chat_members) FROM chat_members WHERE chat_id=?1 AND member_id=?4)
-            ", params![updated.chat_id, updated.user_id, updated.new_perm, user.0])
+            ", params![updated.chat_id, updated.user_id, updated.new_perm, user])
         }).await?;
 
     match affected {
@@ -320,9 +315,9 @@ async fn update_chat_member_perm(
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub(super) struct Chat {
-    chat_id: i64,
-    owner: i64,
-    seconary: Option<i64>,
+    chat_id: ChatId,
+    owner: UserId,
+    seconary: Option<UserId>,
     send_priv: u8,
     tracks_views: bool,
     max_members: u64,
@@ -330,7 +325,7 @@ pub(super) struct Chat {
 }
 
 #[get("/list_chats")]
-async fn list_chats(db: Db, user: users::UserId) -> Result<Json<Vec<Chat>>> {
+async fn list_chats(db: Db, user: UserLoggedIn) -> Result<Json<Vec<Chat>>> {
     Ok(db
         .run(move |db| {
             db.prepare(
@@ -341,7 +336,7 @@ async fn list_chats(db: Db, user: users::UserId) -> Result<Json<Vec<Chat>>> {
             AND chat_members.member_id=?1
             ",
             )?
-            .query_map(params![user.0], |row| {
+            .query_map(params![user], |row| {
                 Ok(Chat {
                     chat_id: row.get(0)?,
                     owner: row.get(1)?,
@@ -361,15 +356,15 @@ async fn list_chats(db: Db, user: users::UserId) -> Result<Json<Vec<Chat>>> {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub(super) struct ChatMember {
-    user_id: i64,
+    user_id: UserId,
     privilage: u8,
 }
 
-#[post("/list_chat_members", data = "<chat>")]
+#[post("/list_chat_members/<chat>")]
 async fn list_chat_members(
     db: Db,
-    user: users::UserId,
-    chat: Json<ChatId>,
+    user: UserLoggedIn,
+    chat: ChatId,
 ) -> Result<Json<Vec<ChatMember>>> {
     Ok(db
         .run(move |db| {
@@ -382,7 +377,7 @@ async fn list_chat_members(
                     ORDER BY privilage DESC
             ",
             )?
-            .query_map(params![user.0, chat.chat_id], |row| {
+            .query_map(params![user, chat], |row| {
                 Ok(ChatMember {
                     user_id: row.get(0)?,
                     privilage: row.get(1)?,
@@ -394,18 +389,13 @@ async fn list_chat_members(
         .into())
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
-#[serde(crate = "rocket::serde")]
-struct UpdateChatNotif {
-    chat_id: i64,
-    notifications: bool,
-}
 
-#[post("/update_chat_notifications", data = "<update>")]
+#[post("/update_chat_notifications/<chat>", data = "<update>")]
 async fn update_chat_notifications(
     db: Db,
-    user: users::UserId,
-    update: Json<UpdateChatNotif>,
+    user: UserLoggedIn,
+    chat: ChatId,
+    update: Json<bool>,
 ) -> Result<Status> {
     let updated = db
         .run(move |db| {
@@ -415,7 +405,7 @@ async fn update_chat_notifications(
                 SET wants_notifications=?3
                 WHERE chat_id=?2 AND member_id=?1
             ",
-                params![user.0, update.chat_id, update.notifications],
+                params![user, chat, update.0],
             )
         })
         .await?;
@@ -425,8 +415,8 @@ async fn update_chat_notifications(
     }
 }
 
-#[post("/mark_chat_read", data = "<update>")]
-async fn mark_chat_read(db: Db, user: users::UserId, update: Json<ChatId>) -> Result<Status> {
+#[post("/mark_chat_read/<chat>")]
+async fn mark_chat_read(db: Db, user: UserLoggedIn, chat: ChatId) -> Result<Status> {
     let since_the_epoch = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .expect("Time went backwards")
@@ -440,7 +430,7 @@ async fn mark_chat_read(db: Db, user: users::UserId, update: Json<ChatId>) -> Re
                 SET last_seen=?3
                 WHERE chat_id=?2 AND member_id=?1
             ",
-                params![user.0, update.chat_id, since_the_epoch as i64],
+                params![user, chat, since_the_epoch as i64],
             )
         })
         .await?;

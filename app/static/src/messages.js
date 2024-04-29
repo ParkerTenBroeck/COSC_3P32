@@ -15,12 +15,12 @@ export async function send_message(message, chat_id){
 
 
 export async function update_message(message, message_id){
-    const resp = await fetch("/database/update_message", {
+    const resp = await fetch("/database/update_message/" + message_id, {
         credentials: "same-origin",
         mode: "same-origin",
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({message: message, message_id: message_id})
+        body: JSON.stringify({message: message})
     });
 
     if (!resp.ok) {
@@ -42,12 +42,12 @@ export async function view_message(message_id){
 }
 
 export async function set_message_pinned(message_id, pinned){
-    const resp = await fetch("/database/set_message_pinned", {
+    const resp = await fetch("/database/set_message_pinned/" + message_id, {
         credentials: "same-origin",
         mode: "same-origin",
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({message_id: message_id, pinned: pinned})
+        body: JSON.stringify(pinned)
     });
 
     if (!resp.ok) {
@@ -56,12 +56,12 @@ export async function set_message_pinned(message_id, pinned){
 }
 
 export async function get_messages(chat_id, previous, limit){
-    const resp = await fetch("/database/get_messages", {
+    const resp = await fetch("/database/get_messages/" + chat_id, {
         credentials: "same-origin",
         mode: "same-origin",
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({chat_id: chat_id, previous: previous, limit:limit})
+        body: JSON.stringify({previous: previous, limit:limit})
     });
 
     if (!resp.ok) {
@@ -74,8 +74,7 @@ export async function get_message(message_id){
     const resp = await fetch("/database/get_message/"+message_id, {
         credentials: "same-origin",
         mode: "same-origin",
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
+        method: "GET"
     });
 
     if (!resp.ok) {
@@ -85,12 +84,10 @@ export async function get_message(message_id){
 }
 
 export async function delete_message(message_id){
-    const resp = await fetch("/database/delete_message", {
+    const resp = await fetch("/database/delete_message/" + message_id, {
         credentials: "same-origin",
         mode: "same-origin",
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({message_id: message_id})
+        method: "DELETE"
     });
 
     if (!resp.ok) {

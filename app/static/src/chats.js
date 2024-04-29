@@ -1,12 +1,10 @@
 
 
 async function create_dm(to){
-    const resp = await fetch("/database/create_dm", {
+    const resp = await fetch("/database/create_dm/" + to, {
         credentials: "same-origin",
         mode: "same-origin",
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({other: to})
     });
 
     if (!resp.ok) {
@@ -63,12 +61,10 @@ async function list_chats(){
 }
 
 async function list_chat_members(chat_id){
-    const resp = await fetch("/database/list_chat_members", {
+    const resp = await fetch("/database/list_chat_members/" + chat_id, {
         credentials: "same-origin",
         mode: "same-origin",
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({chat_id: chat_id})
     });
 
     if (!resp.ok) {
@@ -79,12 +75,12 @@ async function list_chat_members(chat_id){
 }
 
 async function update_chat_notifications(chat_id, notifications){
-    const resp = await fetch("/database/update_chat_notifications", {
+    const resp = await fetch("/database/update_chat_notifications/" + chat_id, {
         credentials: "same-origin",
         mode: "same-origin",
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({chat_id: chat_id, notifications:notifications})
+        body: JSON.stringify(notifications)
     });
 
     if (!resp.ok) {
@@ -94,12 +90,10 @@ async function update_chat_notifications(chat_id, notifications){
 }
 
 async function mark_chat_read(chat_id){
-    const resp = await fetch("/database/mark_chat_read", {
+    const resp = await fetch("/database/mark_chat_read/" + chat_id, {
         credentials: "same-origin",
         mode: "same-origin",
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({chat_id: chat_id})
+        method: "POST"
     });
 
     if (!resp.ok) {
@@ -110,12 +104,10 @@ async function mark_chat_read(chat_id){
 
 
 async function leave_chat(chat_id){
-    const resp = await fetch("/database/leave_chat", {
+    const resp = await fetch("/database/leave_chat/" + chat_id, {
         credentials: "same-origin",
         mode: "same-origin",
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({chat_id: chat_id})
+        method: "POST"
     });
 
     if (!resp.ok) {
@@ -124,12 +116,10 @@ async function leave_chat(chat_id){
 }
 
 async function join_chat(chat_id){
-    const resp = await fetch("/database/join_chat", {
+    const resp = await fetch("/database/join_chat/" + chat_id, {
         credentials: "same-origin",
         mode: "same-origin",
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({chat_id: chat_id})
+        method: "POST"
     });
 
     if (!resp.ok) {
@@ -138,12 +128,10 @@ async function join_chat(chat_id){
 }
 
 async function delete_chat(chat_id){
-    const resp = await fetch("/database/delete_chat", {
+    const resp = await fetch("/database/delete_chat/" + chat_id, {
         credentials: "same-origin",
         mode: "same-origin",
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({chat_id: chat_id})
+        method: "DELETE"
     });
 
     if (!resp.ok) {

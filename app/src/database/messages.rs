@@ -1,66 +1,73 @@
 use std::time::SystemTime;
 
 use crate::database::Db;
-use messages::events::ChatEvents;
+use crate::make_id;
 use rocket::serde::{json::Json, Deserialize, Serialize};
 use rocket::{get, post, routes, State};
 
 use rocket_sync_db_pools::rusqlite;
 use rusqlite::named_params;
 
-use self::events::ChatEvent;
+use self::chats::ChatId;
 use self::rusqlite::params;
+use self::sessions::{SessionEvent, SessionManager};
+use self::users::*;
 use rocket::{delete, http::Status};
 
 use super::*;
+
+
+make_id!(MessageId);
+
+
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub(super) struct SendMessage {
     message: String,
-    reply: Option<i64>,
+    reply: Option<MessageId>,
     attachment: Option<i64>,
-    chat_id: i64,
+    chat_id: ChatId,
 }
 
 #[post("/send_message", data = "<message>")]
 async fn send_message(
     db: Db,
-    user: users::UserId,
+    user: UserLoggedIn,
     message: Json<SendMessage>,
-    listeners: &State<ChatEvents>
-) -> Result<Json<i64>> {
+    sessions: &State<SessionManager>
+) -> Result<Json<MessageId>> {
     let since_the_epoch = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .expect("Time went backwards")
         .as_millis();
 
-    let chat_id = message.chat_id;
+    let chat = message.chat_id;
 
     let mid = db
         .run(move |db| {
             let tran = db.transaction()?;
 
-            let mid: i64 = tran.query_row(
+            let mid = tran.query_row(
                 "
                 INSERT INTO messages 
                     (sender_id, chat_id, message, attachment, posted, reply_to) 
                 SELECT 
-                    ?2, ?1, ?3, ?4, ?5, ?6
+                    :user_id, :chat_id, :message, :attachment, :posted, :reply_to
                 WHERE 1=(
-                    SELECT COUNT(*) FROM chat_members WHERE chat_id=?1 AND member_id=?2 
-                    AND 1=(SELECT COUNT(*) FROM chats WHERE chat_id=?1 AND sending_privilage<=privilage) 
-                ) AND IFNULL(?1=(
-                    SELECT chat_id FROM messages WHERE reply_to=?6
+                    SELECT COUNT(*) FROM chat_members WHERE chat_id=:chat_id AND member_id=:user_id 
+                    AND 1=(SELECT COUNT(*) FROM chats WHERE chat_id=:chat_id AND sending_privilage<=privilage) 
+                ) AND IFNULL(:chat_id=(
+                    SELECT chat_id FROM messages WHERE reply_to=:reply_to
                 ), TRUE)
                 RETURNING message_id",
-                params![
-                    message.chat_id,
-                    user.0,
-                    message.message,
-                    message.attachment,
-                    since_the_epoch as i64,
-                    message.reply,
+                named_params![
+                    ":chat_id": message.chat_id,
+                    ":user_id": user,
+                    ":message": message.message,
+                    ":attachment": message.attachment,
+                    ":posted": since_the_epoch as i64,
+                    ":reply_to": message.reply,
                 ],
                 |row| row.get(0),
             )?;
@@ -69,26 +76,19 @@ async fn send_message(
         })
         .await?;
 
-    listeners.event(chat_id, ChatEvent::NewMessage(mid)).await;
+        sessions.event(SessionEvent::NewMessage { chat, message: mid }).await;
 
     Ok(mid.into())
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(crate = "rocket::serde")]
-pub(super) struct MessageId {
-    message_id: i64,
-}
-
-#[delete("/delete_message", data = "<message_id>")]
+#[delete("/delete_message/<message>")]
 async fn delete_message(
     db: Db,
-    user: users::UserId,
-    message_id: Json<MessageId>,
-    listeners: &State<ChatEvents>
+    user: UserLoggedIn,
+    message: MessageId,
+    sessions: &State<SessionManager>
 ) -> Result<Status> {
-    let message_id = message_id.message_id;
-    let chat_id: i64 = db
+    let chat: ChatId = db
         .run(move |conn| {
             conn.query_row(
                 "
@@ -103,32 +103,31 @@ async fn delete_message(
         )
         RETURNING chat_id",
                 named_params![
-                    ":message_id": message_id, 
-                    ":user_id": user.0],
+                    ":message_id": message, 
+                    ":user_id": user],
             |row| row.get(0))
         })
         .await?;
 
-    listeners.event(chat_id, ChatEvent::MessageDeleted(message_id)).await;
+    sessions.event(SessionEvent::MessageDeleted { chat, message }).await;
     Ok(Status::Accepted)
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub(super) struct UpdateMessage {
-    message_id: i64,
     message: String,
 }
 
-#[post("/update_message", data = "<message>")]
+#[post("/update_message/<message>", data = "<content>")]
 async fn update_message(
     db: Db,
-    user: users::UserId,
-    message: Json<UpdateMessage>,
-    listeners: &State<ChatEvents>
+    user: UserLoggedIn,
+    message: MessageId,
+    content: Json<UpdateMessage>,
+    sessions: &State<SessionManager>
 ) -> Result<Status> {
-    let message_id = message.message_id;
-    let chat_id = db
+    let chat = db
         .run(move |conn| {
             let since_the_epoch = SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
@@ -136,16 +135,16 @@ async fn update_message(
                 .as_millis();
 
             let tran = conn.transaction()?;
-            let updated: i64 = tran.query_row(
+            let updated = tran.query_row(
                 "
             UPDATE messages
             SET message = ?3, last_edited=?4
             WHERE message_id=?1 AND sender_id=?2
             RETURNING chat_id",
                 params![
-                    message_id,
-                    user.0,
-                    message.message,
+                    message,
+                    user,
+                    content.message,
                     since_the_epoch as i64
                 ], |row| row.get(0)
             )?;
@@ -155,14 +154,14 @@ async fn update_message(
         })
         .await?;
 
-        listeners.event(chat_id, ChatEvent::MessageEdited(message_id)).await;
+    sessions.event(SessionEvent::MessageEdited { chat, message }).await;
     Ok(Status::Accepted)
 }
 
-#[post("/view_message/<message_id>")]
-async fn view_message(db: Db, user: users::UserId, message_id: i64, events: &State<ChatEvents>) -> Result<Status> {
+#[post("/view_message/<message>")]
+async fn view_message(db: Db, user: UserLoggedIn, message: MessageId, sessions: &State<SessionManager>) -> Result<Status> {
     
-    let chat_id: i64 = db
+    let chat = db
         .run(move |db| {
             db.query_row(
                 "
@@ -174,32 +173,27 @@ async fn view_message(db: Db, user: users::UserId, message_id: i64, events: &Sta
                 RETURNING chat_id
             ",
                 named_params![
-                    ":user_id": user.0, 
-                    ":message_id": message_id],
+                    ":user_id": user, 
+                    ":message_id": message],
             |row| row.get(0)
             )
         })
         .await?;
-    events.event(chat_id, ChatEvent::MessageEdited(message_id)).await;
+    sessions.event(SessionEvent::MessageEdited { chat, message }).await;
     Ok(Status::Accepted)
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
-#[serde(crate = "rocket::serde")]
-struct UpdateMessagePinned {
-    message_id: i64,
-    pinned: bool,
-}
 
-#[post("/set_message_pinned", data = "<update>")]
+
+#[post("/set_message_pinned/<message>", data = "<pinned>")]
 async fn set_message_pinned(
     db: Db,
-    user: users::UserId,
-    update: Json<UpdateMessagePinned>,
-    events: &State<ChatEvents>
+    user: UserLoggedIn,
+    message: MessageId,
+    pinned: Json<bool>,
+    sessions: &State<SessionManager>
 ) -> Result<Status> {
-    let message_id = update.message_id;
-    let cid: i64 = db
+    let chat = db
         .run(move |db| {
             db.query_row(
                 "
@@ -212,17 +206,14 @@ async fn set_message_pinned(
                 )
                 RETURNING chat_id
             ",
-                params![user.0, update.message_id, update.pinned],
+                params![user, message, pinned.0],
                 |row| row.get(0)
             )
         })
         .await?;
-    events.event(cid, ChatEvent::UserUpdated(message_id)).await;
+    sessions.event(SessionEvent::MessageEdited { chat, message }).await;
 
-    match cid {
-        1 => Ok(Status::Accepted),
-        _ => Ok(Status::NotAcceptable),
-    }
+    Ok(Status::Accepted)
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -233,22 +224,22 @@ struct Message {
     reply_to: Option<i64>,
     posted: i64,
     last_edited: Option<i64>,
-    sender_id: i64,
+    sender_id: UserId,
     views: Option<i64>,
     pinned: bool,
 }
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
 struct GetMessages {
-    chat_id: i64,
     previous: Option<usize>,
     limit: Option<usize>,
 }
 
-#[post("/get_messages", data = "<get>")]
+#[post("/get_messages/<chat>", data = "<get>")]
 async fn get_messages(
     db: Db,
-    user: users::UserId,
+    user: UserLoggedIn,
+    chat: ChatId,
     get: Json<GetMessages>,
 ) -> Result<Json<Vec<Message>>> {
     let messages = db
@@ -270,8 +261,8 @@ async fn get_messages(
                 named_params! {
                     ":limit": get.limit.unwrap_or(50),
                     ":offset": get.previous.unwrap_or(0),
-                    ":chat_id": get.chat_id,
-                    ":user_id": user.0,
+                    ":chat_id": chat,
+                    ":user_id": user,
                 },
                 |row| {
                     Ok(Message {
@@ -296,7 +287,7 @@ async fn get_messages(
 #[get("/get_message/<message_id>")]
 async fn get_message(
     db: Db,
-    user: users::UserId,
+    user: UserLoggedIn,
     message_id: i64,
 ) -> Result<Json<Message>> {
     let messages = db
@@ -313,7 +304,7 @@ async fn get_message(
             :user_id IN (SELECT member_id FROM chat_members WHERE chat_members.chat_id=messages.chat_id)",
                 named_params! {
                     ":message_id": message_id,
-                    ":user_id": user.0,
+                    ":user_id": user,
                 },
                 |row| {
                     Ok(Message {

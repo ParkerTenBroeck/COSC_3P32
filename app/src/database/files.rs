@@ -1,12 +1,15 @@
-use crate::database::Db;
+use crate::{database::Db, make_id};
 use rocket::{data::ToByteUnit, get, http::Status, post, routes, serde::json::Json, Data};
 use rocket_sync_db_pools::rusqlite;
 use rusqlite::named_params;
 
 use super::*;
 
+
+make_id!(FileId);
+
 #[get("/attachments/<id>/<name>")]
-async fn attachments_with_name(db: Db, id: i64, name: String) -> Result<Vec<u8>> {
+async fn attachments_with_name(db: Db, id: FileId, name: String) -> Result<Vec<u8>> {
     Ok(db.run(move |db|{
         db.query_row("
             SELECT contents FROM files WHERE file_id=:id AND file_name=:name
@@ -19,7 +22,7 @@ async fn attachments_with_name(db: Db, id: i64, name: String) -> Result<Vec<u8>>
 }
 
 #[get("/attachments/<id>")]
-async fn attachments(db: Db, id: i64) -> Result<Vec<u8>> {
+async fn attachments(db: Db, id: FileId) -> Result<Vec<u8>> {
     Ok(db.run(move |db|{
         db.query_row("
             SELECT contents FROM files WHERE file_id=:id
@@ -31,14 +34,14 @@ async fn attachments(db: Db, id: i64) -> Result<Vec<u8>> {
 }
 
 #[post("/upload_file/<name>", data = "<file>")]
-async fn upload(db: Db, name: String, file: Data<'_>) -> Result<Result<Json<i64>, Status>>{
+async fn upload(db: Db, name: String, file: Data<'_>) -> Result<Result<Json<FileId>, Status>>{
     
     let file = match file.open(10.gigabytes()).into_bytes().await{
         Ok(ok) => ok.value,
         Err(_) => return Ok(Err(Status::NotAcceptable)),
     };
 
-    let id: i64 = db.run(move |db|{
+    let id: FileId = db.run(move |db|{
         db.query_row("
             INSERT INTO files (file_name, contents)
             VALUES (:name, :data)

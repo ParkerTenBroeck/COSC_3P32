@@ -6,6 +6,8 @@ use rocket::{delete, http::Status};
 use rocket_sync_db_pools::rusqlite;
 use rusqlite::named_params;
 
+use super::users::*;
+
 use super::*;
 
 
@@ -23,7 +25,7 @@ pub struct Contact {
 }
 
 #[get("/get_contacts")]
-async fn list_users(db: Db, user: users::UserId) -> Result<Json<Vec<Contact>>> {
+async fn list_users(db: Db, user: UserLoggedIn) -> Result<Json<Vec<Contact>>> {
     let ids = db
         .run(move |conn| {
             conn.prepare(
@@ -38,7 +40,7 @@ async fn list_users(db: Db, user: users::UserId) -> Result<Json<Vec<Contact>>> {
             )?
             .query_map(
                 named_params![
-                    ":user_id": user.0
+                    ":user_id": user
                 ],
                 |row| {
                     Ok(Contact {
@@ -66,7 +68,7 @@ pub struct ContactId {
 }
 
 #[get("/add_contact", data = "<contact>")]
-async fn add_contact(db: Db, user: users::UserId, contact: Json<ContactId>) -> Result<Status> {
+async fn add_contact(db: Db, user: UserLoggedIn, contact: Json<ContactId>) -> Result<Status> {
     let affected =
         db.0.run(move |db| {
             db.execute(
@@ -76,7 +78,7 @@ async fn add_contact(db: Db, user: users::UserId, contact: Json<ContactId>) -> R
         VALUES
             (:user_id, :contact_id)",
                 named_params![
-                    ":user_id": user.0,
+                    ":user_id": user,
                     ":contact_id": contact.contact_id
                 ],
             )
@@ -90,7 +92,7 @@ async fn add_contact(db: Db, user: users::UserId, contact: Json<ContactId>) -> R
 }
 
 #[delete("/delete_contact", data = "<contact>")]
-async fn delete_contact(db: Db, user: users::UserId, contact: Json<ContactId>) -> Result<Status> {
+async fn delete_contact(db: Db, user: UserLoggedIn, contact: Json<ContactId>) -> Result<Status> {
     let affected =
         db.0.run(move |db| {
             db.execute(
@@ -100,7 +102,7 @@ async fn delete_contact(db: Db, user: users::UserId, contact: Json<ContactId>) -
             user_id=:user_id AND contact_user_id=:contact_id
         ",
                 named_params![
-                    ":user_id": user.0,
+                    ":user_id": user,
                     ":contact_id": contact.contact_id
                 ],
             )
@@ -114,7 +116,7 @@ async fn delete_contact(db: Db, user: users::UserId, contact: Json<ContactId>) -
 }
 
 #[post("/find_user_email", data = "<email>")]
-async fn find_user_email(db: Db, _user: users::UserId, email: String) -> Result<Json<Option<i64>>> {
+async fn find_user_email(db: Db, _user: UserLoggedIn, email: String) -> Result<Json<Option<i64>>> {
     let res =
         db.0.run(move |db| {
             db.query_row(
@@ -138,7 +140,7 @@ async fn find_user_email(db: Db, _user: users::UserId, email: String) -> Result<
 }
 
 #[post("/find_user_phone", data = "<phone>")]
-async fn find_user_phone(db: Db, _user: users::UserId, phone: String) -> Result<Json<Option<i64>>> {
+async fn find_user_phone(db: Db, _user: UserLoggedIn, phone: String) -> Result<Json<Option<i64>>> {
     let res =
         db.0.run(move |db| {
             db.query_row(
@@ -164,7 +166,7 @@ async fn find_user_phone(db: Db, _user: users::UserId, phone: String) -> Result<
 #[post("/find_user_username", data = "<username>")]
 async fn find_user_username(
     db: Db,
-    _user: users::UserId,
+    _user: UserLoggedIn,
     username: String,
 ) -> Result<Json<Option<i64>>> {
     let res =

@@ -4,12 +4,12 @@ pub mod contacts;
 pub mod messages;
 pub mod users;
 pub mod files;
-pub mod events;
+pub mod sessions;
+pub mod ids;
 
 use std::collections::HashMap;
 
 use rocket::response::Debug;
-use rocket::serde::{Deserialize, Serialize};
 use rocket::{fairing::AdHoc, Build, Rocket};
 use rocket_sync_db_pools::database;
 
@@ -47,6 +47,6 @@ pub fn stage_database() -> AdHoc {
         .mount("/database", admin::routes())
         .mount("/database", contacts::routes())
         .mount("/database", files::routes())
-        .attach(events::adhoc())
+        .attach(sessions::adhoc())
     })
 }

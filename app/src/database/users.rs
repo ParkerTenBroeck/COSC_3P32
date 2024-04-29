@@ -1,18 +1,36 @@
 use crate::database::Db;
+use crate::make_id;
 use rocket::response::status::Created;
 use rocket::serde::{json::Json, Deserialize, Serialize};
-use rocket::{get, post, routes};
+use rocket::{get, post, routes, State};
 
 use rocket_sync_db_pools::rusqlite;
-use rusqlite::named_params;
+use rusqlite::{named_params, ToSql};
 
+use self::files::FileId;
 use self::rusqlite::params;
+use self::sessions::{SessionEvent, SessionManager};
 
-#[derive(Debug, Clone, Copy)]
-pub(super) struct UserId(pub i64);
+make_id!(UserId);
+
+#[derive(Debug, Clone, Copy, std::hash::Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct UserLoggedIn(UserId);
+impl UserLoggedIn {
+    pub fn id(&self) -> UserId {
+        self.0
+    }
+}
+
+impl ToSql for UserLoggedIn{
+    fn to_sql(&self) -> rusqlite::Result<rusqlite::types::ToSqlOutput<'_>> {
+        self.0.to_sql()
+    }
+}
+
+
 
 #[rocket::async_trait]
-impl<'r> FromRequest<'r> for UserId {
+impl<'r> FromRequest<'r> for UserLoggedIn {
     type Error = std::convert::Infallible;
 
     async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
@@ -21,12 +39,13 @@ impl<'r> FromRequest<'r> for UserId {
             .get_private("user_id")
             .and_then(|c| c.value().parse().ok())
             .map(UserId)
+            .map(UserLoggedIn)
             .or_forward(Status::Unauthorized)
     }
 }
 
 impl UserId {
-    pub async fn load(self, conn: &Db) -> Result<User, rusqlite::Error> {
+    pub(super) async fn load(self, conn: &Db) -> Result<User, rusqlite::Error> {
         conn.run(move |db| {
             db.query_row(
                 "SELECT user_id, phone_number, name, email, location, username, password, bio, pfp_file_id FROM users WHERE user_id=?1",
@@ -50,32 +69,10 @@ impl UserId {
     }
 }
 
-#[rocket::async_trait]
-impl<'r> FromRequest<'r> for User {
-    type Error = rusqlite::Error;
-
-    async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
-        let conn = match Db::get_one(request.rocket())
-            .await
-            .or_forward(Status::Unauthorized)
-        {
-            Outcome::Success(db) => db,
-            Outcome::Error(val) => return Outcome::Error(val),
-            Outcome::Forward(val) => return Outcome::Forward(val),
-        };
-        let user_id = match UserId::from_request(request).await {
-            Outcome::Success(db) => db,
-            Outcome::Forward(val) => return Outcome::Forward(val),
-            _ => unreachable!(),
-        };
-        user_id.load(&conn).await.or_forward(Status::Unauthorized)
-    }
-}
-
 use rocket::{
     delete,
-    http::{Cookie, CookieJar, Status},
-    outcome::{IntoOutcome, Outcome},
+    http::{CookieJar, Status},
+    outcome::IntoOutcome,
     request::{self, FromRequest},
     Request, Route,
 };
@@ -93,11 +90,12 @@ pub(super) struct CreateUser {
     password: String,
 }
 
+
 #[post("/create_user", data = "<create_user>")]
 pub(super) async fn new_user(
     db: Db,
     create_user: Json<CreateUser>,
-) -> Result<std::result::Result<Created<Json<i64>>, Status>> {
+) -> Result<std::result::Result<Created<Json<UserId>>, Status>> {
     let id = db
         .run(move |conn| {
             conn.query_row(
@@ -115,7 +113,7 @@ pub(super) async fn new_user(
                     create_user.username,
                     create_user.password,
                 ],
-                |r| r.get::<_, i64>(0),
+                |r| r.get::<_, UserId>(0),
             )
         })
         .await;
@@ -140,7 +138,7 @@ struct UpdateUser {
 }
 
 #[post("/update_user", data = "<updates>")]
-async fn update_user(db: Db, user: UserId, updates: Json<UpdateUser>) -> Result<Status> {
+async fn update_user(db: Db, user: UserLoggedIn, updates: Json<UpdateUser>, sessions: &State<SessionManager>) -> Result<Status> {
     let affected = db
         .run(move |db| {
             Result::<_, rusqlite::Error>::Ok(db.execute(
@@ -150,7 +148,7 @@ async fn update_user(db: Db, user: UserId, updates: Json<UpdateUser>) -> Result<
             WHERE user_id=:user_id
         ",
                 named_params![
-                    ":user_id": user.0,
+                    ":user_id": user,
                     ":phone_number": updates.phone_number,
                     ":name": updates.name,
                     ":email": updates.email,
@@ -162,6 +160,7 @@ async fn update_user(db: Db, user: UserId, updates: Json<UpdateUser>) -> Result<
             )?)
         })
         .await?;
+    sessions.event(SessionEvent::UserUpdated { user: user.id() }).await;
 
     match affected {
         1 => Ok(Status::Accepted),
@@ -170,7 +169,7 @@ async fn update_user(db: Db, user: UserId, updates: Json<UpdateUser>) -> Result<
 }
 
 #[post("/update_user_pfp/<pfp_id>")]
-async fn update_user_pfp(db: Db, user: UserId, pfp_id: i64) -> Result<Status> {
+async fn update_user_pfp(db: Db, user: UserLoggedIn, pfp_id: FileId, sessions: &State<SessionManager>) -> Result<Status> {
     // println!("{pfp_id}");
     let affected = db
         .run(move |db| {
@@ -188,58 +187,22 @@ async fn update_user_pfp(db: Db, user: UserId, pfp_id: i64) -> Result<Status> {
         })
         .await?;
 
+    sessions.event(SessionEvent::UserUpdated { user: user.id() }).await;
+
+
     match affected {
         1 => Ok(Status::Accepted),
         _ => Ok(Status::NotAcceptable),
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(crate = "rocket::serde")]
-pub(super) struct LoginRequest {
-    email: String,
-    password: String,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(crate = "rocket::serde")]
-enum AuthResult {
-    Authorized,
-    Failed,
-}
-
-#[post("/login", data = "<login>")]
-async fn login(db: Db, jar: &CookieJar<'_>, login: Json<LoginRequest>) -> Result<Json<AuthResult>> {
-    jar.remove_private("user_id");
-
-    let id: Result<i64, _> = db
-        .run(move |conn| {
-            conn.query_row(
-                "SELECT user_id FROM users WHERE email=?1 AND password=?2",
-                params![login.email, login.password],
-                |r| r.get(0),
-            )
-        })
-        .await;
-
-    match id {
-        Err(rusqlite::Error::QueryReturnedNoRows) => Ok(AuthResult::Failed.into()),
-        Ok(id) => {
-            jar.add_private(Cookie::build(("user_id", format!("{id}"))));
-            Ok(AuthResult::Authorized.into())
-        }
-        Err(err) => Err(err.into()),
-    }
-}
-
-#[post("/logout")]
-async fn logout(jar: &CookieJar<'_>) {
-    jar.remove_private("user_id")
-}
-
 #[get("/who_am_i")]
-async fn who_am_i(user: Option<User>) -> Result<Json<Option<User>>> {
-    Ok(user.into())
+async fn who_am_i(db: Db, user: Option<UserLoggedIn>) -> Result<Json<Option<User>>> {
+    if let Some(user) = user{
+        Ok(Some(user.0.load(&db).await?).into())
+    }else{
+        Ok(None.into())
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -260,9 +223,9 @@ pub struct User {
 }
 
 #[delete("/delete_account")]
-async fn delete_account(db: Db, jar: &CookieJar<'_>, user: UserId) -> Result<Status> {
+async fn delete_account(db: Db, jar: &CookieJar<'_>, user: UserLoggedIn) -> Result<Status> {
     let affected = db
-        .run(move |conn| conn.execute("DELETE FROM users WHERE user_id=?1", params![user.0]))
+        .run(move |conn| conn.execute("DELETE FROM users WHERE user_id=:user_id", named_params![":user_id": user]))
         .await?;
 
     jar.remove_private("user_id");
@@ -275,7 +238,7 @@ async fn delete_account(db: Db, jar: &CookieJar<'_>, user: UserId) -> Result<Sta
 }
 
 #[get("/get_username/<user_id>")]
-async fn get_username(db: Db, _user: users::UserId, user_id: i64) -> Result<String>{
+async fn get_username(db: Db, _user: UserLoggedIn, user_id: UserId) -> Result<String>{
     let username = db
         .run(move |conn| {
             conn.prepare(
@@ -308,15 +271,14 @@ async fn get_username(db: Db, _user: users::UserId, user_id: i64) -> Result<Stri
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct SafeUser {
-    #[serde(skip_deserializing)]
-    pub user_id: i64,
+    pub user_id: UserId,
     pub display_name: String,
     pub bio: String,
     pub pfp_file_id: Option<i64>,
 }
 
 #[get("/get_user/<user_id>")]
-async fn get_user(db: Db, _user: users::UserId, user_id: i64) -> Result<Json<SafeUser>> {
+async fn get_user(db: Db, _user: UserLoggedIn, user_id: UserId) -> Result<Json<SafeUser>> {
     let user = db
         .run(move |conn| {
             conn.query_row(
@@ -351,9 +313,7 @@ async fn get_user(db: Db, _user: users::UserId, user_id: i64) -> Result<Json<Saf
 pub fn routes() -> Vec<Route> {
     routes![
         new_user,
-        login,
         who_am_i,
-        logout,
         delete_account,
         update_user,
         get_username,
