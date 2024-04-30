@@ -108,12 +108,37 @@ export class Session{
     }
     async getMessage(message_id){
         if(this.message_cache.get(message_id) == null){
+            
+            let message = await api.messages.get_message(message_id);
+            if (message.attachment_id != null){
+                message.attachment = "/database/attachments/" + message.attachment_id;
+            }else{
+                message.attachment = null;
+            }
+
             this.message_cache.set(
                 message_id,
-                api.messages.get_message(message_id)
+                (async () => message)()
             );
         }
         return await this.message_cache.get(message_id);
+    }
+
+    async getMessages(chat_id, previous, limit){
+        let list = await api.messages.get_messages(chat_id, previous, limit);
+        for (const message of list){
+            if (message.attachment_id != null){
+                message.attachment = "/database/attachments/" + message.attachment_id;
+            }else{
+                message.attachment = null;
+            }
+
+            this.message_cache.set(
+                message.message_id,
+                (async () => message)()
+            );
+        }
+        return list;
     }
 
     addSelfListener(listener){
@@ -128,6 +153,9 @@ export class Session{
 
     async begin(){
         this.event = new EventSource("/database/open_session")
+        this.event.onerror = () => {
+            window.location.href = "/login.html"
+        }
         this.user = await users.who_am_i();
         this.event.onmessage = async (e) => {
             const event = JSON.parse(e.data);

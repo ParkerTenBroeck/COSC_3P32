@@ -1,10 +1,10 @@
-export async function send_message(message, chat_id){
+export async function send_message(message, chat_id, attachment_id, reply){
     const resp = await fetch("/database/send_message", {
         credentials: "same-origin",
         mode: "same-origin",
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({message: message, chat_id: chat_id})
+        body: JSON.stringify({message: message, chat_id: chat_id, attachment_id: attachment_id, reply: reply})
     });
 
     if (!resp.ok) {

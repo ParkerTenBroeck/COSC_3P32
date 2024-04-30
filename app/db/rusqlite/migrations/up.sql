@@ -27,7 +27,7 @@ CREATE TABLE messages (
     message_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     message TEXT,
     reply_to INTEGER NULL REFERENCES messages(message_id) ON DELETE SET NULL,
-    attachment INTEGER NULL REFERENCES files(file_id),
+    attachment_id INTEGER NULL REFERENCES files(file_id),
     posted BIGINT NOT NULL,
     last_edited BIGINT,
     sender_id INTEGER NULL REFERENCES users(user_id) ON DELETE SET NULL,

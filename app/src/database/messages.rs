@@ -26,7 +26,7 @@ make_id!(MessageId);
 pub(super) struct SendMessage {
     message: String,
     reply: Option<MessageId>,
-    attachment: Option<i64>,
+    attachment_id: Option<i64>,
     chat_id: ChatId,
 }
 
@@ -51,9 +51,9 @@ async fn send_message(
             let mid = tran.query_row(
                 "
                 INSERT INTO messages 
-                    (sender_id, chat_id, message, attachment, posted, reply_to) 
+                    (sender_id, chat_id, message, attachment_id, posted, reply_to) 
                 SELECT 
-                    :user_id, :chat_id, :message, :attachment, :posted, :reply_to
+                    :user_id, :chat_id, :message, :attachment_id, :posted, :reply_to
                 WHERE 1=(
                     SELECT COUNT(*) FROM chat_members WHERE chat_id=:chat_id AND member_id=:user_id 
                     AND 1=(SELECT COUNT(*) FROM chats WHERE chat_id=:chat_id AND sending_privilage<=privilage) 
@@ -65,7 +65,7 @@ async fn send_message(
                     ":chat_id": message.chat_id,
                     ":user_id": user,
                     ":message": message.message,
-                    ":attachment": message.attachment,
+                    ":attachment_id": message.attachment_id,
                     ":posted": since_the_epoch as i64,
                     ":reply_to": message.reply,
                 ],
@@ -227,6 +227,7 @@ struct Message {
     sender_id: Option<UserId>,
     views: Option<i64>,
     pinned: bool,
+    attachment_id: Option<i64>,
 }
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(crate = "rocket::serde")]
@@ -247,7 +248,7 @@ async fn get_messages(
             conn.prepare(
                 "
         SELECT 
-            message_id, message, reply_to, posted, last_edited, sender_id, views, pinned
+            message_id, message, reply_to, posted, last_edited, sender_id, views, pinned, attachment_id
         FROM 
             messages
         WHERE
@@ -274,6 +275,7 @@ async fn get_messages(
                         sender_id: row.get(5)?,
                         views: row.get(6)?,
                         pinned: row.get(7)?,
+                        attachment_id: row.get(8)?,
                     })
                 },
             )?
@@ -295,7 +297,7 @@ async fn get_message(
             conn.query_row(
                 "
         SELECT 
-            message_id, message, reply_to, posted, last_edited, sender_id, views, pinned
+            message_id, message, reply_to, posted, last_edited, sender_id, views, pinned, attachment_id
         FROM 
             messages
         WHERE
@@ -316,6 +318,7 @@ async fn get_message(
                         sender_id: row.get(5)?,
                         views: row.get(6)?,
                         pinned: row.get(7)?,
+                        attachment_id: row.get(8)?
                     })
                 },
             )

@@ -1,20 +1,5 @@
 
 
-async function deleteMessage(message_id) {
-  try {
-    await api.messages.delete_message(message_id);
-  } catch (e) {
-    alert("you aren't able to delete that message");
-  }
-}
-
-async function editMessage(message_id) {
-
-}
-
-async function replyMessage(message_id) {
-
-}
 
 async function generateInner(message) {
   const user = await page.session.getUser(message.sender_id);
@@ -31,7 +16,28 @@ async function generateInner(message) {
 
   let views = "";
   if (message.views != null) {
-    views = `<span class="views">views: ${message.views}</span>`
+    views = `<span class="views">&#40; views: ${message.views} &#41;</span>`
+  }
+  
+  let attachment = "";
+  if (message.attachment != null){
+    attachment = `<img src="${message.attachment}" alt="Profile Picture" class="attachment">`;
+  }
+
+  let pinned = "";
+  let pin;
+  if (message.pinned){
+    pinned = "*";
+    pin = `<button onclick='page.currentChat.unpinMessage(${message.message_id})'>Unpin</button>`;
+  }else{
+    pin = `<button onclick='page.currentChat.pinMessage(${message.message_id})'>Pin</button>`;
+  }
+
+  let reply = ""
+  if(message.reply_to){
+    const r = await page.session.getMessage(message.reply_to);
+    const u = await page.session.getUser(r.sender_id);
+    reply = `<span class="reply-name">reply -> ${u.display_name}</span><span class="reply">${r.message}</span>`;
   }
 
   function escapeHtml(unsafe)
@@ -52,22 +58,25 @@ async function generateInner(message) {
     <div class="message-details">
         <div class="msg-info">
           <!-- Username -->
-          <span class="username">${escapeHtml(user.display_name)}</span>
+          <span class="username">${pinned}${escapeHtml(user.display_name)}</span>
           <!-- Date uploaded -->
           ${date}
           ${views}
+          ${reply}
 
           <!-- Options -->
           <div class="options">
-              <button onclick='deleteMessage(${message.message_id})'>Delete</button>
-              <button onclick='editMessage(${message.message_id})'>Edit</button>
-              <button onclick='replyMessage(${message.message_id})'>Reply</button>
+              ${pin}
+              <button onclick='page.currentChat.deleteMessage(${message.message_id})'>Delete</button>
+              <button onclick='page.currentChat.editMessage(${message.message_id})'>Edit</button>
+              <button onclick='page.currentChat.replyMessage(${message.message_id})'>Reply</button>
           </div>
         </div>
         <!-- Message contents -->
         <div class="message-content">
             <p>${message.message}</p>
         </div>
+        ${attachment}
 
     </div>
   </div>`;
@@ -76,9 +85,11 @@ async function generateInner(message) {
 
 
 
-
-
 class Chat{
+
+  attachment_id = null;
+  reply_id = null;
+  editing_id = null;
 
   current_chat_id;
 
@@ -90,17 +101,116 @@ class Chat{
           <div id="chatName" class="chat-header"></div>
           <ul style="overflow-x:scroll" class="chat-messages" id="chatMessages">
           </ul>
-          <input type="text" id="messageInput" class="message-input" placeholder="Type your message...">
+          <div style="display:flex">
+          <input style="flex-grow:1" type="text" id="messageInput" class="message-input" placeholder="Type your message...">
+          <button onclick="page.currentChat.selectAttachment()">attachment</button>
+          </div>
           `;
 
     const input = this.chatArea.querySelector("#messageInput");
+    
+    document.addEventListener("keyup", (e) => {
+      if(e.keyCode == 27){
+        if (this.editing_id){
+          const input = this.chatArea.querySelector("#messageInput");
+          input.value = "";
+        }
+        this.editMessage(null);
+        this.replyMessage(null);
+        this.attachment_id = null;
+      }
+    })
+    
     input.addEventListener("keypress", async (e) => {
       if (!e.shiftKey && e.keyCode == 13) {
         var message = input.value;
-        let num = await api.messages.send_message(message, this.current_chat_id);
+        if (this.editing_id == null){
+          await api.messages.send_message(message, this.current_chat_id, this.attachment_id, this.reply_id);
+        }else{
+          await api.messages.update_message(message, this.editing_id);
+        }
+        this.editMessage(null);
+        this.setAttachment(null);
         input.value = "";
       }
     });
+  }
+
+  async pinMessage(message_id){
+    await api.messages.set_message_pinned(message_id, true);
+  }
+
+  async unpinMessage(message_id){
+    await api.messages.set_message_pinned(message_id, false);
+  }
+
+  async selectAttachment(){
+    var input = document.createElement('input');
+    input.type = 'file';
+
+    input.onchange = async (e) => { 
+      var file = e.target.files[0]; 
+      let reader = new FileReader();
+      reader.readAsBinaryString(file);
+      
+      const fid = await api.files.upload_file(file.name, file);
+      this.setAttachment(fid);
+   }
+   input.click();
+  }
+
+  async setAttachment(attachment_id){
+    this.attachment_id = attachment_id;
+  }
+
+  async editMessage(message_id){
+    this.editing_id = message_id;
+    for(const item of this.chatArea.querySelectorAll(".replying")){
+      item.classList.remove("replying");
+    }
+
+    if(message_id != null){
+      const input = this.chatArea.querySelector("#messageInput");
+      try{
+        input.value = (await page.session.getMessage(message_id)).message;
+        this.editing_id = message_id;
+      }catch(e){
+  
+      }
+
+      for(const item of this.chatArea.querySelectorAll("#mid"+message_id)){
+        item.classList.add("replying");
+      }
+    }
+
+  }
+
+  replyMessage(message_id){
+    this.editMessage(null);
+    for(const item of this.chatArea.querySelectorAll(".replying")){
+      item.classList.remove("replying");
+    }
+    if(message_id != null){
+      for(const item of this.chatArea.querySelectorAll("#mid"+message_id)){
+        item.classList.add("replying");
+      }
+    }
+    this.reply_id = message_id;
+  }
+
+
+  async deleteMessage(message_id) {
+    if(message_id == this.reply_id){
+      this.replyMessage(null);
+    }
+    if(message_id == this.editing_id){
+      this.editMessage(null);
+    }
+    try {
+      await api.messages.delete_message(message_id);
+    } catch (e) {
+      alert("you aren't able to delete that message");
+    }
   }
 
   async show(chat_id){
@@ -113,16 +223,16 @@ class Chat{
     var chatMessages = this.chatArea.querySelector("#chatMessages");
     chatMessages.innerHTML = "";
 
-    for (const message of await api.messages.get_messages(this.current_chat_id)){
+    for (const message of await page.session.getMessages(this.current_chat_id)){
       this.addOldMessage(message)
     }
   }
 
-  deleteMessage(mid) {
+  deleteMessageEvent(mid) {
     document.getElementById("mid" + mid).outerHTML = "";
   }
   
-  async updateMessage(message) {
+  async editMessageEvent(message) {
     const element = document.getElementById("mid" + message.message_id);
     if (element != null) {
       element.innerHTML = await generateInner(message);
@@ -139,12 +249,12 @@ class Chat{
     newMessage.innerHTML = await generateInner(message);
     chatMessages.scroll(0, 999999999);
 
-    if (page.session.getChat(this.current_chat_id).tracks_views) {
+    if ((await page.session.getChat(this.current_chat_id)).tracks_views) {
       await api.messages.view_message(message.message_id);
     }
   }
 
-  async addMessage(message) {
+  async addMessageEvent(message) {
 
     var chatMessages = this.chatArea.querySelector("#chatMessages");
     var newMessage = document.createElement("div");
@@ -154,7 +264,7 @@ class Chat{
     newMessage.innerHTML = await generateInner(message);
     chatMessages.scroll(0, 999999999);
   
-    if (page.session.getChat(this.current_chat_id).tracks_views) {
+    if ((await page.session.getChat(this.current_chat_id)).tracks_views) {
       await api.messages.view_message(message.message_id);
     }
   }
@@ -176,13 +286,13 @@ class Chat{
         await this.realod_info();
         break;     
       case "NewMessage":
-          await this.addMessage(await page.session.getMessage(e.message))
+          await this.addMessageEvent(await page.session.getMessage(e.message))
           break;
       case "MessageEdited":
-          await this.editMessage(await page.session.getMessage(e.message))  
+          await this.editMessageEvent(await page.session.getMessage(e.message))  
           break;
       case "MessageDeleted":
-          await this.deleteMessage(e.message)
+          await this.deleteMessageEvent(e.message)
           break;
     }
   }
@@ -345,7 +455,7 @@ class Page{
     channelArea.innerHTML = "";
   
     for (const chat of chats) {
-      const content = `<li class="chat-list-item" onclick='page.showChat(${chat.chat_id})'>${chat.display_name}</li>`;
+      const content = `<li class="chat-list-item" id="cid${chat.chat_id}" onclick='page.showChat(${chat.chat_id})'>${chat.display_name}</li>`;
       if (chat.kind == "dm"){
         dmArea.innerHTML += content;
       }else if (chat.kind=="group"){
@@ -452,6 +562,6 @@ async function createChat() {
     }
   }
 
-  await reload_chat_data();
+  await page.reloadChatList();
   document.getElementById("cid" + new_id).onclick();
 }

@@ -8,6 +8,7 @@ pub mod sessions;
 pub mod ids;
 
 use std::collections::HashMap;
+use std::time::Duration;
 
 use rocket::response::Debug;
 use rocket::{fairing::AdHoc, Build, Rocket};
@@ -17,6 +18,24 @@ type Result<T, E = Debug<rusqlite::Error>> = std::result::Result<T, E>;
 
 #[database("rusqlite")]
 pub(in crate::database) struct Db(rusqlite::Connection);
+
+async fn setup_db(rocket: Rocket<Build>) -> Rocket<Build> {
+    Db::get_one(&rocket)
+        .await
+        .expect("database mounted")
+        .run(move |conn| {
+            
+            conn.busy_handler(Some(|_| {
+                println!("asdasd");
+                true
+            }))
+            // conn.busy_timeout(Duration::from_secs(200))
+        })
+        .await
+        .expect("can init rusqlite DB");
+
+    rocket
+}
 
 async fn init_db(rocket: Rocket<Build>) -> Rocket<Build> {
     Db::get_one(&rocket)
@@ -39,7 +58,8 @@ pub fn stage_database() -> AdHoc {
             rocket.attach(AdHoc::on_ignite("Rusqlite Init", init_db))
         } else {
             rocket
-        }
+        }.attach(AdHoc::on_ignite("Rusqlite Setup", setup_db))
+        
         .mount("/database", users::routes())
         .mount("/database", messages::routes())
         .mount("/database", chats::routes())

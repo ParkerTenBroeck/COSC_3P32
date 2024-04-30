@@ -132,25 +132,21 @@ fn open_session<'a>(db: Db, shutdown: rocket::Shutdown, guard: SessionGuard, ses
         _ = db.run(move |db|{
             db.execute("UPDATE users SET availability=1 WHERE user_id=:user_id", named_params! [":user_id": guard.1])
         }).await;
+        drop(db);
        
         let (stream_id, mut receiver) = sessions.begin(guard).await;
         let mut shutdown = std::pin::pin!(shutdown);
 
-        struct Bruh(Option<Db>, SessionGuard, u64, SessionManager);
-        let _bruh = Bruh(Some(db), guard, stream_id, (*sessions).clone());
+        struct Bruh(SessionGuard, u64, SessionManager);
+        let _bruh = Bruh(guard, stream_id, (*sessions).clone());
         impl Drop for Bruh{
             fn drop(&mut self){
-                if let Some(db) = self.0.take(){
-                    let guard = self.1;
-                    let sessions = self.3.clone();
-                    let stream_id = self.2;
-                    rocket::tokio::spawn(async move {
-                        _ = db.run(move |db|{
-                            db.execute("UPDATE users SET availability=0 WHERE user_id=:user_id", named_params! [":user_id": guard.1])
-                        }).await;
-                        sessions.remove_active(stream_id, guard).await;
-                    });
-                }
+                let guard = self.0;
+                let sessions = self.2.clone();
+                let stream_id = self.1;
+                rocket::tokio::spawn(async move {
+                    sessions.remove_active(stream_id, guard).await;
+                });
             }
         }
         

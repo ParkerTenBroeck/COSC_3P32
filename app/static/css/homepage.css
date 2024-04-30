@@ -99,11 +99,32 @@ body {
     margin-top: 3px;
     margin-left: 4px;
 }
+
+/* Style for the date */
+.reply-name {
+    font-size: 0.8em;
+    color: #7289da;
+    margin-top: 3px;
+    margin-left: 4px;
+}
+
+.reply {
+    font-size: 0.8em;
+    color: #99aab5;
+    margin-top: 3px;
+    margin-left: 4px;
+}
+
 /* Style for the message content */
 .message-content {
     margin-top: 10px;
     color: #2c2f33;
 }
+
+.attachment{
+    width: min(40vw, 100%);
+}
+
 /* Style for attachment links */
 .attachments a {
     color: #7289da;
@@ -169,4 +190,10 @@ body {
     width: 120px; /* Adjust as needed */
     margin-right: 10px; /* Adjust as needed */
     text-align: right;
+}
+
+.replying .message-container{
+    outline-width: 2px;
+    outline-style: solid;
+    border-radius: 8px;
 }
