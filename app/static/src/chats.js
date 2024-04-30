@@ -127,13 +127,13 @@ async function join_chat(chat_id){
     }
 }
 
-export async function update_user_perm(chat_id, user_id, perm){
+export async function update_user_perm(chat_id, user_id, new_perm){
     const resp = await fetch("/database/update_chat_member_perm/", {
         credentials: "same-origin",
         mode: "same-origin",
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({chat_id: chat_id, user_id: user_id, perm: perm})
+        body: JSON.stringify({chat_id: chat_id, user_id: user_id, new_perm: new_perm})
     });
 
     if (!resp.ok) {
