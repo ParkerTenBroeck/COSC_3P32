@@ -64,11 +64,34 @@ export class Session{
     }
 
     async getUser(user_id){
+        if(user_id == null){
+            return {
+                user_id: null,
+                display_name: "<deleted>",
+                bio: "<deleted>",
+                pfp_file_id: null,
+                pfp: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Default_pfp.svg/2048px-Default_pfp.svg.png"
+            }
+        }
         if(this.user_cache.get(user_id) == null){
-            this.user_cache.set(
-                user_id,
-                api.users.get_user(user_id)
-            );
+            try{
+                this.user_cache.set(
+                    user_id,
+                    api.users.get_user(user_id)
+                );
+            }catch(e){
+                this.user_cache.set(
+                    user_id,
+                    (async () => {
+                        return {
+                            user_id: null,
+                            display_name: "<deleted>",
+                            bio: "<deleted>",
+                            pfp_file_id: null
+                        }
+                    })()
+                )
+            }
         }
         try{
             let user = await this.user_cache.get(user_id);

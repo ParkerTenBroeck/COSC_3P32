@@ -224,7 +224,7 @@ struct Message {
     reply_to: Option<i64>,
     posted: i64,
     last_edited: Option<i64>,
-    sender_id: UserId,
+    sender_id: Option<UserId>,
     views: Option<i64>,
     pinned: bool,
 }

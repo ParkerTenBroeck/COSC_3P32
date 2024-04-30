@@ -28,28 +28,31 @@ async function generateInner(message) {
     date = `<span class="date">edited: ${date}</span>`;
   }
 
-  let pfp;
-  if (user.pfp_file_id == null) {
-    pfp = "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Default_pfp.svg/2048px-Default_pfp.svg.png"
-  } else {
-    pfp = "/database/attachments/" + user.pfp_file_id;
-  }
 
   let views = "";
   if (message.views != null) {
     views = `<span class="views">views: ${message.views}</span>`
   }
 
+  function escapeHtml(unsafe)
+{
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+ }
 
   return `
   <div class="message-container">
     <!-- Profile picture -->
-    <img src="${pfp}" alt="Profile Picture" class="pfp">
+    <img src="${user.pfp}" alt="Profile Picture" class="pfp">
 
     <div class="message-details">
         <div class="msg-info">
           <!-- Username -->
-          <span class="username">${user.display_name}</span>
+          <span class="username">${escapeHtml(user.display_name)}</span>
           <!-- Date uploaded -->
           ${date}
           ${views}
@@ -226,6 +229,7 @@ class UserSettings{
               <button type="button" onclick="page.userSettings.update()">Update</button>
             </form>
             <button onclick="api.users.logout()">Logout</button>
+            <button onclick="api.users.delete_account()">Delete Account</button>
           </div>`;
   
     const dropzone = this.settingsArea.querySelector('#fileDropzone');
