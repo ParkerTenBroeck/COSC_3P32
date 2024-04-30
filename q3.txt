@@ -41,6 +41,8 @@ G(gid, n, o)
 
 gid -> n, o
 
+in bcnf
+
 ---------------------------------------------------------------------------------------------
 
 GroupMembers(**<ins>group_id, user_id</ins>**, privilege)
@@ -48,6 +50,10 @@ GroupMembers(**<ins>group_id, user_id</ins>**, privilege)
 GM(gid, uid, p)
 
 gid, uid -> p
+
+one composite key
+
+bcnf
 
 ---------------------------------------------------------------------------------------------
 
@@ -57,6 +63,13 @@ CP(cid, mid)
 
 composite key
 
+1nf yes
+2nf no partial dependencies on a composite minimum key
+3nf cid and mid are the key
+BCNF the left-hand side is a minimum key of the relation
+
+BCNF yes
+
 ---------------------------------------------------------------------------------------------
 
 Messages(**<ins>message_id</ins>**, owner: user_id, content: Data, type: Type, date: Date, last_edited: Option<Date>)
@@ -65,12 +78,28 @@ M(m, u, c, t, d, l)
 
 m -> m, u, c, t, d, l
 
+1nf yes
+2nf no partial dependencies on a composite minimum key
+3nf cid and mid are the key
+BCNF the left-hand side is a minimum key of the relation
+
 ---------------------------------------------------------------------------------------------
 
 ChannelMessages(**<ins>chanel_id, message_id</ins>**, views: INTEGER)
 
+CM(c, m, v)
+
+c, m -> v
+
+1nf yes
+2nf no partial dependencies on a composite minimum key
+3nf cid and mid are the key
+BCNF the left-hand side is a minimum key of the relation
+
 ---------------------------------------------------------------------------------------------
 
 PrivateMessages(**<ins>message_id, contact_user_id</ins>**)
+
+PM
 
 
