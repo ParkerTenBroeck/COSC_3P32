@@ -289,7 +289,7 @@ struct UpdatePerm {
     new_perm: u8,
 }
 
-#[delete("/update_chat_member_perm", data = "<updated>")]
+#[post("/update_chat_member_perm", data = "<updated>")]
 async fn update_chat_member_perm(
     db: Db,
     user: UserLoggedIn,
