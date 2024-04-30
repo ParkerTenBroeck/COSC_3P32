@@ -7,6 +7,7 @@ use rocket::serde::{json::Json, Deserialize, Serialize};
 use rocket::{get, post, routes};
 
 use rocket_sync_db_pools::rusqlite;
+use rusqlite::named_params;
 
 use self::rusqlite::params;
 use rocket::{delete, http::Status};
@@ -298,12 +299,16 @@ async fn update_chat_member_perm(
     let affected = db.0.run(move |db|{
             db.execute("
             UPDATE chat_members
-                SET privilage=?3
+                SET privilage=:new_perm
             WHERE
-                chat_id=?1 AND member_id=?2 
-                AND ?3<(SELECT SUM(chat_members) FROM chat_members WHERE chat_id=?1 AND member_id=?4)
-                AND privilage<(SELECT SUM(chat_members) FROM chat_members WHERE chat_id=?1 AND member_id=?4)
-            ", params![updated.chat_id, updated.user_id, updated.new_perm, user])
+                chat_id=:chat_id AND member_id=:updated_user_id 
+                AND :new_perm<(SELECT privilage FROM chat_members WHERE chat_id=:chat_id AND member_id=:user_id)
+                AND privilage<(SELECT privilage FROM chat_members WHERE chat_id=:chat_id AND member_id=:user_id)
+            ", named_params![
+                ":chat_id": updated.chat_id, 
+                ":updated_user_id": updated.user_id, 
+                ":new_perm": updated.new_perm, 
+                ":user_id": user])
         }).await?;
 
     match affected {
