@@ -141,7 +141,7 @@ CREATE TABLE chats (
     sending_privilage INTEGER NOT NULL,
 	
     track_views BOOLEAN NOT NULL,
-    max_members INTEGER NOT NULL,
+    max_members INTEGER NULL,
     chat_name VARCHAR(100) NULL
 );
 
@@ -157,7 +157,6 @@ CREATE TABLE messages (
     views INTEGER NULL,
     pinned BOOLEAN NOT NULL DEFAULT FALSE
 );
-
 
 CREATE TABLE chat_members (
     chat_id INTEGER NOT NULL REFERENCES chats(chat_id) ON DELETE CASCADE,
@@ -237,24 +236,26 @@ VALUES
 COMMIT;
 
 -- create a channel max members is null as channels do not have a max
+BEGIN;
 INSERT INTO chats
 	(primary_owner, sending_privilage, track_views, max_members, chat_name)
 SELECT
-	?1, 128, TRUE, 9223372036854775807, ?2
+	1, 128, TRUE, null, 'this is a channel'
 WHERE 100>(
 	SELECT COUNT(*) FROM
 		(SELECT chat_id FROM chats WHERE secondary_owner IS NULL) t1
 	LEFT JOIN
 		chat_members
 	ON (t1.chat_id=chat_members.chat_id)
-	WHERE member_id=?1
+	WHERE member_id=1
 )
 RETURNING chat_id;
 
 INSERT INTO chat_members
 (chat_id, member_id, privilage)
 VALUES
-(?1, ?2, 255);
+(3, 1, 255);
+COMMIT;
 
 -- join chat
 INSERT INTO chat_members
@@ -293,6 +294,8 @@ VALUES
 ![[Pasted image 20240430220830.png]]
 ![[Pasted image 20240430221014.png]]
 ![[Pasted image 20240430222217.png]]
+![[Pasted image 20240430223550.png]]
+
 
 ## q5
 
