@@ -198,19 +198,21 @@ VALUES
 	(1, 2);
 
 -- create a dm
+BEGIN;
 INSERT INTO chats
 	(primary_owner, secondary_owner, sending_privilage, track_views, max_members)
 SELECT
 	1, 2, 0, FALSE, 2
 WHERE NOT EXISTS
 	(SELECT 1 FROM chats WHERE (primary_owner=1 AND secondary_owner=2) OR (primary_owner=2 AND secondary_owner=1))
-RETURNING chat_id INTO var1
+RETURNING chat_id;
 
 INSERT INTO chat_members
 	(chat_id, member_id, privilage)
 VALUES
-	(var1, 1, 255),
-	(var1, 2, 255);
+	(1, 1, 255),
+	(1, 2, 255);
+COMMIT;
 
 -- create group
 INSERT INTO chats
