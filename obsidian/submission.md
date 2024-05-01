@@ -214,6 +214,44 @@ VALUES
 	(var1, ?other_user, 255);
 
 -- create group
+INSERT INTO chats
+	(primary_owner, sending_privilage, track_views, max_members, chat_name)
+SELECT
+	?1, 0, FALSE, 2000, ?2
+WHERE 100>(
+	SELECT COUNT(*) FROM
+		(SELECT chat_id FROM chats WHERE secondary_owner IS NULL) t1
+	LEFT JOIN
+		chat_members
+	ON (t1.chat_id=chat_members.chat_id)
+	WHERE member_id=?1
+)
+RETURNING chat_id;
+
+INSERT INTO chat_members
+(chat_id, member_id, privilage)
+VALUES
+(?1, ?2, 255);
+
+-- create a channel max members is null as channels do not have a max
+INSERT INTO chats
+	(primary_owner, sending_privilage, track_views, max_members, chat_name)
+SELECT
+	?1, 128, TRUE, 9223372036854775807, ?2
+WHERE 100>(
+	SELECT COUNT(*) FROM
+		(SELECT chat_id FROM chats WHERE secondary_owner IS NULL) t1
+	LEFT JOIN
+		chat_members
+	ON (t1.chat_id=chat_members.chat_id)
+	WHERE member_id=?1
+)
+RETURNING chat_id;
+
+INSERT INTO chat_members
+(chat_id, member_id, privilage)
+VALUES
+(?1, ?2, 255);
 
 --insert some messages
 INSERT INTO messages
@@ -415,3 +453,17 @@ p. For a given message ID, retrieve all its information.
 ```sql
 SELECT * FROM messages WHERE message_id=:message_id
 ```
+
+## q6
+included with this submission is a rust project that will run as a webserver for this project
+
+to run the project you will need rust installed see https://www.rust-lang.org/tools/install
+
+below is example output of the program:
+![[Pasted image 20240430211549.png]]
+![[Pasted image 20240430211602.png]]
+![[Pasted image 20240430211733.png]]
+![[Pasted image 20240430211805.png]]
+![[Pasted image 20240430212012.png]]
+![[Pasted image 20240430212119.png]]
+![[Pasted image 20240430212245.png]]
