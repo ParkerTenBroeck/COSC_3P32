@@ -511,7 +511,7 @@ class Page{
 
 const page = new Page();
 document.addEventListener("DOMContentLoaded", async function (event) {
-  if (api.users.who_am_i() == null){
+  if ((await api.users.who_am_i()) == null){
     window.location.href = "/login.html"
   }
   page.begin();
