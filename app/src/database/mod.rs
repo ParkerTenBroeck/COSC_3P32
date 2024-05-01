@@ -8,7 +8,6 @@ pub mod sessions;
 pub mod ids;
 
 use std::collections::HashMap;
-use std::time::Duration;
 
 use rocket::response::Debug;
 use rocket::{fairing::AdHoc, Build, Rocket};
