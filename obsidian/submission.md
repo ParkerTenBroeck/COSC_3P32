@@ -1,6 +1,25 @@
-## q1
+# COSC 3P32 Group Project
 
-![erd](<ER Diagram.drawio.png>)
+Parker TenBroeck: 7376726, pt21zs
+
+Ivy Gifford: 7404775, ag21os
+<div style="page-break-after: always; visibility: hidden">
+\pagebreak
+</div>
+
+&nbsp;
+## division of labour 
+
+- q1 ivy 
+- q2 ivy 
+- q3 ivy 
+- q4 database - parker 
+- q4 demo data - ivy 
+- q5 statements - parker 
+- q5 demo data - ivy 
+- q6 parker
+
+## q1
 
 the sent by relation does not have total participation as when a user is deleted, the message's sent by field will be set to null indication the message was sent by a deleted user
 
@@ -8,6 +27,13 @@ the chats ISA constraint is not overlaping as a chat can be only a channel, grou
 
 another thing not modeled is the join links on the groups. this is because we are using the format http://sitename/join_chat/<chat_id> as our join links so links are already stored as the id of the chat
 
+![erd](<ER Diagram.drawio.png>)
+
+<div style="page-break-after: always; visibility: hidden">
+\pagebreak
+</div>
+
+&nbsp;
 ## q2
 
 Files(**<ins>fild_id: INTEGER</ins>**, file_name: TEXT, contents: BLOB)
