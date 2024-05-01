@@ -106,6 +106,7 @@ since c,m is the minimum candidate key and the only FD that holds this relation 
 
 ## q4
 
+database:
 ```sql
 CREATE TABLE files (
     file_id SERIAL PRIMARY KEY,
@@ -170,6 +171,14 @@ CREATE TABLE chat_members (
 );
 ```
 
+![[Pasted image 20240430220529.png]]
+![[Pasted image 20240430220545.png]]
+![[Pasted image 20240430220557.png]]
+![[Pasted image 20240430220610.png]]
+![[Pasted image 20240430220620.png]]
+![[Pasted image 20240430220630.png]]
+
+adding test data:
 ```sql
 -- insert some users
 INSERT INTO users
@@ -180,28 +189,28 @@ VALUES
 
 -- insert into files
 INSERT INTO files (file_name, contents)
-VALUES (:name, :data);
+VALUES ('testfile', 'image data');
 
 -- insert a contact
 INSERT INTO contacts
 	(user_id, contact_user_id)
 VALUES
-	(0, 1);
+	(1, 2);
 
 -- create a dm
 INSERT INTO chats
 	(primary_owner, secondary_owner, sending_privilage, track_views, max_members)
 SELECT
-	0, 1, 0, FALSE, 2
+	1, 2, 0, FALSE, 2
 WHERE NOT EXISTS
-	(SELECT 1 FROM chats WHERE (primary_owner=1 AND secondary_owner=2) OR (primary_owner=0 AND secondary_owner=1))
+	(SELECT 1 FROM chats WHERE (primary_owner=1 AND secondary_owner=2) OR (primary_owner=2 AND secondary_owner=1))
 RETURNING chat_id INTO var1
 
 INSERT INTO chat_members
 	(chat_id, member_id, privilage)
 VALUES
-	(var1, 0, 255),
-	(var1, 1, 255);
+	(var1, 1, 255),
+	(var1, 2, 255);
 
 -- create group
 INSERT INTO chats
@@ -275,10 +284,10 @@ VALUES
 	(1, 2, 'channel time!', null, 1714528668494, null);
 
 
-
-
-
 ```
+![[Pasted image 20240430220741.png]]
+![[Pasted image 20240430220830.png]]
+![[Pasted image 20240430221014.png]]
 
 ## q5
 
