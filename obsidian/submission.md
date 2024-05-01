@@ -257,7 +257,27 @@ VALUES
 (3, 1, 255);
 COMMIT;
 
--- join chat
+-- join chat 2
+INSERT INTO chat_members
+	(chat_id, member_id, privilage)
+SELECT
+	2, 2, 0
+WHERE
+100>(
+	SELECT COUNT(*) FROM
+		(SELECT chat_id FROM chats WHERE secondary_owner IS NULL) t1
+	LEFT JOIN
+		chat_members
+	ON (t1.chat_id=chat_members.chat_id)
+	WHERE member_id=3
+) AND
+(
+	(SELECT SUM(max_members) FROM chats WHERE chat_id=3)
+	>
+	(SELECT COUNT(*) FROM chat_members WHERE chat_id=3)
+);
+
+-- join chat 3
 INSERT INTO chat_members
 	(chat_id, member_id, privilage)
 SELECT
@@ -281,12 +301,12 @@ WHERE
 INSERT INTO messages
 	(sender_id, chat_id, message, attachment_id, posted, reply_to)
 VALUES
-	(0, 0, 'hello in a dm', null, 1714528509619, null),
-	(1, 0, 'hey!', null, 1714528560684, null),
-	(0, 1, 'howdy in a group!', null, 1714528649805, null)
-	(1, 1, 'cool!', null, 1714528659417, null)
-	(0, 2, 'zoinks in a channel', null, 1714528664131, null)
-	(1, 2, 'channel time!', null, 1714528668494, null);
+	(1, 1, 'hello in a dm', null, 1714528509619, null),
+	(2, 1, 'hey!', null, 1714528560684, null),
+	(1, 2, 'howdy in a group!', null, 1714528649805, null),
+	(2, 2, 'cool!', null, 1714528659417, null),
+	(1, 3, 'zoinks in a channel', null, 1714528664131, null),
+	(2, 3, 'channel time!', null, 1714528668494, null);
 
 
 ```
@@ -297,7 +317,7 @@ VALUES
 ![[Pasted image 20240430223550.png]]
 ![[Pasted image 20240430224045.png]]
 ![[Pasted image 20240430224927.png]]
-
+![[Pasted image 20240430225206.png]]
 
 ## q5
 
