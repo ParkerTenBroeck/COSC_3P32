@@ -153,9 +153,7 @@ export class Session{
 
     async begin(){
         this.event = new EventSource("/database/open_session")
-        this.event.onerror = () => {
-            window.location.href = "/login.html"
-        }
+        
         this.user = await users.who_am_i();
         this.event.onmessage = async (e) => {
             const event = JSON.parse(e.data);

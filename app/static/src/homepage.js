@@ -99,6 +99,7 @@ class Chat{
     this.chatArea.id = "chatArea";
     this.chatArea.innerHTML = `
           <div id="chatName" class="chat-header"></div>
+          <p id="joinLink" class=""></p>
           <ul style="overflow-x:scroll" class="chat-messages" id="chatMessages">
           </ul>
           <div style="display:flex">
@@ -273,6 +274,12 @@ class Chat{
     const chat = await page.session.getChat(this.current_chat_id);
     
     this.chatArea.querySelector("#chatName").innerHTML = chat.display_name;
+
+    var joinLink = this.chatArea.querySelector("#joinLink");
+    if((await page.session.getChat(this.current_chat_id)).kind != "dm")
+      joinLink.innerHTML = "join this chat link!: \t"+window.location.host+"/join_chat/" + this.current_chat_id;
+    else
+    joinLink.innerHTML = "";
   }
 
   async event(e){
@@ -504,6 +511,9 @@ class Page{
 
 const page = new Page();
 document.addEventListener("DOMContentLoaded", async function (event) {
+  if (api.users.who_am_i() == null){
+    window.location.href = "/login.html"
+  }
   page.begin();
 });
 
