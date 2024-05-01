@@ -266,14 +266,13 @@ WHERE
 --insert some messages
 INSERT INTO messages
 	(sender_id, chat_id, message, attachment_id, posted, reply_to)
-SELECT
-	0, :chat_id, 'hey there', :attachment_id, :posted, :reply_to
-WHERE 1=(
-	SELECT COUNT(*) FROM chat_members WHERE chat_id=:chat_id AND member_id=:user_id
-	AND 1=(SELECT COUNT(*) FROM chats WHERE chat_id=:chat_id AND sending_privilage<=privilage)
-) AND IFNULL(:chat_id=(
-	SELECT chat_id FROM messages WHERE reply_to=:reply_to
-), TRUE);
+VALUES
+	(0, 0, 'hello in a dm', null, 1714528509619, null),
+	(1, 0, 'hey!', null, 1714528560684, null),
+	(0, 1, 'howdy in a group!', null, 1714528649805, null)
+	(1, 1, 'cool!', null, 1714528659417, null)
+	(0, 2, 'zoinks in a channel', null, 1714528664131, null)
+	(1, 2, 'channel time!', null, 1714528668494, null);
 
 
 
