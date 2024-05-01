@@ -182,17 +182,67 @@ INSERT INTO users
 VALUES
 	('3212', 'parker', 'parker@brock.ca', 'ontario', 'heygrey', '123');
 
+-- insert into files
+INSERT INTO files (file_name, contents)
+VALUES (:name, :data)
+
+-- insert a contact
+INSERT INTO contacts
+(user_id, contact_user_id)
+VALUES
+(0, 1)
+
+-- delete a contact
+DELETE FROM contacts
+WHERE
+	user_id=:user_id AND contact_user_id=:contact_id
+
+-- create a dm
+
+INSERT INTO chats
+	(primary_owner, secondary_owner, sending_privilage, track_views, max_members)
+SELECT
+	?1, ?2, 0, FALSE, 2
+WHERE NOT EXISTS
+	(SELECT 1 FROM chats WHERE (primary_owner=?1 AND secondary_owner=?2) OR (primary_owner=?2 AND secondary_owner=?1))
+RETURNING chat_id INTO var1
+
+INSERT INTO chat_members
+	(chat_id, member_id, privilage)
+VALUES
+	(var1, ?user_id, 255),
+	(var1, ?other_user, 255);
+
+-- create group
+
 --insert some messages
 INSERT INTO messages
 	(sender_id, chat_id, message, attachment_id, posted, reply_to)
 SELECT
-	:user_id, :chat_id, :message, :attachment_id, :posted, :reply_to
+	0, :chat_id, 'hey there', :attachment_id, :posted, :reply_to
 WHERE 1=(
 	SELECT COUNT(*) FROM chat_members WHERE chat_id=:chat_id AND member_id=:user_id
 	AND 1=(SELECT COUNT(*) FROM chats WHERE chat_id=:chat_id AND sending_privilage<=privilage)
 ) AND IFNULL(:chat_id=(
 	SELECT chat_id FROM messages WHERE reply_to=:reply_to
 ), TRUE)
+
+-- delete a message
+DELETE FROM messages
+WHERE message_id=:message_id AND
+(
+	sender_id=:user_id
+	OR
+	(SELECT privilage FROM chat_members WHERE member_id=:user_id)
+	>
+	(SELECT privilage FROM chat_members WHERE member_id=message_id)
+)
+
+-- update a message
+UPDATE messages
+SET message = ?3, last_edited=?4
+WHERE message_id=?1 AND sender_id=?2
+
 
 
 ```
