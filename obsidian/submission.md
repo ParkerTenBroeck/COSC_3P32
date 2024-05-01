@@ -176,7 +176,7 @@ CREATE TABLE chat_members (
 ![[Pasted image 20240430220557.png]]
 ![[Pasted image 20240430220610.png]]
 ![[Pasted image 20240430220620.png]]
-![[Pasted image 20240430220630.png]]
+![[Pasted image 20240430221722.png]]
 
 adding test data:
 ```sql
