@@ -261,7 +261,7 @@ COMMIT;
 INSERT INTO chat_members
 	(chat_id, member_id, privilage)
 SELECT
-	?1, ?2, 0
+	3, 2, 0
 WHERE
 100>(
 	SELECT COUNT(*) FROM
@@ -269,12 +269,12 @@ WHERE
 	LEFT JOIN
 		chat_members
 	ON (t1.chat_id=chat_members.chat_id)
-	WHERE member_id=?1
+	WHERE member_id=3
 ) AND
 (
-	(SELECT SUM(max_members) FROM chats WHERE chat_id=?1)
+	(SELECT SUM(max_members) FROM chats WHERE chat_id=3)
 	>
-	(SELECT COUNT(*) FROM chat_members WHERE chat_id=?1)
+	(SELECT COUNT(*) FROM chat_members WHERE chat_id=3)
 );
 
 --insert some messages
@@ -296,6 +296,7 @@ VALUES
 ![[Pasted image 20240430222217.png]]
 ![[Pasted image 20240430223550.png]]
 ![[Pasted image 20240430224045.png]]
+![[Pasted image 20240430224927.png]]
 
 
 ## q5
