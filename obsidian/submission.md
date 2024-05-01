@@ -436,6 +436,7 @@ WHERE
   chat_id=:chat_id
 ORDER BY posted DESC
 ```
+![[Pasted image 20240430230635.png]]
 
 l. For a given chat, retrieve its message during a specific date-time
 ```sql
@@ -449,8 +450,9 @@ WHERE
   AND posted>=:after
 ORDER BY posted DESC
 ```
+![[Pasted image 20240430230827.png]]
 
-m. For a given chat, retrieve all messages posted by a user during a
+m. For a given chat, retrieve all messages posted by a user during a specific date-time range
 ```sql
 SELECT 
   message_id
@@ -463,6 +465,7 @@ WHERE
   AND posted>=:after
 ORDER BY posted DESC
 ```
+![[Pasted image 20240430231000.png]]
 
 n. For a given chat, retrieve its unread messages.
 ```sql
@@ -481,6 +484,7 @@ WHERE
       chat_id=:chat_id
   )
 ```
+![[Pasted image 20240430231032.png]]
 
 o. For a given chat, retrieve the last n (say 100) message.
 ```sql
@@ -493,11 +497,13 @@ WHERE
 ORDER BY posted DESC
 LIMIT 100
 ```
+![[Pasted image 20240430231101.png]]
 
 p. For a given message ID, retrieve all its information.
 ```sql
 SELECT * FROM messages WHERE message_id=:message_id
 ```
+![[Pasted image 20240430231124.png]]
 
 ## q6
 included with this submission is a rust project that will run as a webserver for this project
