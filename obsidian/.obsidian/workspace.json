@@ -1,0 +1,173 @@
+{
+  "main": {
+    "id": "133ca77d5543f9b4",
+    "type": "split",
+    "children": [
+      {
+        "id": "55ad48988e4da4a3",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "057308a65cfed776",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "q5.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "4a3eaa5e8c32c258",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "submission.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "676d56bebd341882",
+    "type": "split",
+    "children": [
+      {
+        "id": "187b86b35af70ab3",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "2596db96ca0f42ed",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical"
+              }
+            }
+          },
+          {
+            "id": "2a1523efe77f1d5f",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              }
+            }
+          },
+          {
+            "id": "5a7ddfab2ddeb84b",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {}
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "3d3c54b21fcd665b",
+    "type": "split",
+    "children": [
+      {
+        "id": "138984acfb02df44",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "49bd3dfce45cff7f",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "submission.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          },
+          {
+            "id": "d26aa874ad2bda7a",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "submission.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          },
+          {
+            "id": "bbd2638920167d5d",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true
+              }
+            }
+          },
+          {
+            "id": "73493a3d778a2063",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "submission.md"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false
+    }
+  },
+  "active": "2596db96ca0f42ed",
+  "lastOpenFiles": [
+    "q4.md",
+    "submission.md",
+    "q5.md",
+    "q1.md",
+    "q3.md",
+    "q2.md",
+    "Welcome.md",
+    "ER Diagram.drawio.png"
+  ]
+}
