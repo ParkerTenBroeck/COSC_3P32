@@ -508,7 +508,7 @@ SELECT * FROM messages WHERE message_id=:message_id
 ## q6
 included with this submission is a rust project that will run as a webserver for this project
 
-you can either run it locally or you can use the online demo we have running
+you can either run it locally or you can use the online demo we have running at http://sc.on.underlying.skynet.tpgc.me:42069/login.html
 
 to run the project locally you will need rust installed see https://www.rust-lang.org/tools/install and then you can use `cargo run` within the projects directory 
 
