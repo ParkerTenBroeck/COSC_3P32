@@ -215,10 +215,11 @@ VALUES
 COMMIT;
 
 -- create group
+BEGIN;
 INSERT INTO chats
 	(primary_owner, sending_privilage, track_views, max_members, chat_name)
 SELECT
-	0, 0, FALSE, 2000, 'hello'
+	1, 0, FALSE, 2000, 'hello'
 WHERE 100>(
 	SELECT COUNT(*) FROM
 		(SELECT chat_id FROM chats WHERE secondary_owner IS NULL) t1
@@ -227,12 +228,13 @@ WHERE 100>(
 	ON (t1.chat_id=chat_members.chat_id)
 	WHERE member_id=0
 )
-RETURNING chat_id INTO var1
+RETURNING chat_id;
 
 INSERT INTO chat_members
 (chat_id, member_id, privilage)
 VALUES
-(var1, 0, 255);
+(2, 1, 255);
+COMMIT;
 
 -- create a channel max members is null as channels do not have a max
 INSERT INTO chats
@@ -290,6 +292,7 @@ VALUES
 ![[Pasted image 20240430220741.png]]
 ![[Pasted image 20240430220830.png]]
 ![[Pasted image 20240430221014.png]]
+![[Pasted image 20240430222217.png]]
 
 ## q5
 
