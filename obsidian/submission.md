@@ -295,6 +295,7 @@ VALUES
 ![[Pasted image 20240430221014.png]]
 ![[Pasted image 20240430222217.png]]
 ![[Pasted image 20240430223550.png]]
+![[Pasted image 20240430224045.png]]
 
 
 ## q5
