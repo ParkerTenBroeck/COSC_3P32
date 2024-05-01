@@ -412,6 +412,7 @@ WHERE
   chat_id=:chat_id
   AND privilage>=(SELECT sending_privilage FROM chats WHERE chat_id=:chat_id)
 ```
+![[Pasted image 20240430230513.png]]
 
 j. For a given chat admin, retrieve his/her permissions.
 ```sql
@@ -423,6 +424,7 @@ WHERE
   chat_id=:chat_id
   AND member_id=:member_id
 ```
+![[Pasted image 20240430230542.png]]
 
 k. For a given chat, retrieve all its message history
 ```sql
