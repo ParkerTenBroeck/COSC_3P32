@@ -198,6 +198,7 @@ VALUES
 	(1, 2);
 
 -- create a dm
+BEGIN;
 INSERT INTO chats
 	(primary_owner, secondary_owner, sending_privilage, track_views, max_members)
 SELECT
@@ -211,6 +212,7 @@ INSERT INTO chat_members
 VALUES
 	(var1, 1, 255),
 	(var1, 2, 255);
+COMMIT;
 
 -- create group
 INSERT INTO chats
