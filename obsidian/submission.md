@@ -326,11 +326,13 @@ VALUES
 ```sql
 SELECT * FROM users
 ```
+![[Pasted image 20240430225640.png]]
 
 **b. Retrieve the list of all online users.**
 ```sql
 SELECT * FROM users WHERE availability=1
 ```
+![[Pasted image 20240430225651.png]]
 
 **c. Given a user (by phone number or unique ID or username), retrieve all information of the user.**
 ```sql
@@ -343,6 +345,8 @@ WHERE
   OR COALESCE(phone_number=:phone_number, false)
   OR COALESCE(username=:username, false)
 ```
+![[Pasted image 20240430225815.png]]
+![[Pasted image 20240430225900.png]]
 
 **d. Given a user (by phone number, unique ID or username) retrieve all his/her chats (private chats, normal groups and channels)**
 ```sql
