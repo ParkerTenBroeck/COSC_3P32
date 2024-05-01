@@ -138,7 +138,7 @@ CREATE TABLE chats (
     secondary_owner INTEGER NULL REFERENCES users(user_id) ON DELETE CASCADE,
     
     sending_privilage INTEGER NOT NULL,
-
+	
     track_views BOOLEAN NOT NULL,
     max_members INTEGER NOT NULL,
     chat_name VARCHAR(100) NULL
@@ -162,10 +162,10 @@ CREATE TABLE chat_members (
     chat_id INTEGER NOT NULL REFERENCES chats(chat_id) ON DELETE CASCADE,
     member_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     privilage INTEGER NOT NULL,
-
+	
     wants_notifications BOOLEAN NOT NULL DEFAULT TRUE,
     last_seen BIGINT NOT NULL DEFAULT 0,
-
+	
     PRIMARY KEY (chat_id, member_id)
 );
 ```
@@ -194,7 +194,7 @@ INSERT INTO chats
 SELECT
 	0, 1, 0, FALSE, 2
 WHERE NOT EXISTS
-	(SELECT 1 FROM chats WHERE (primary_owner=?1 AND secondary_owner=?2) OR (primary_owner=?2 AND secondary_owner=?1))
+	(SELECT 1 FROM chats WHERE (primary_owner=1 AND secondary_owner=2) OR (primary_owner=0 AND secondary_owner=1))
 RETURNING chat_id INTO var1
 
 INSERT INTO chat_members
@@ -207,21 +207,21 @@ VALUES
 INSERT INTO chats
 	(primary_owner, sending_privilage, track_views, max_members, chat_name)
 SELECT
-	?1, 0, FALSE, 2000, ?2
+	0, 0, FALSE, 2000, 'hello'
 WHERE 100>(
 	SELECT COUNT(*) FROM
 		(SELECT chat_id FROM chats WHERE secondary_owner IS NULL) t1
 	LEFT JOIN
 		chat_members
 	ON (t1.chat_id=chat_members.chat_id)
-	WHERE member_id=?1
+	WHERE member_id=0
 )
-RETURNING chat_id;
+RETURNING chat_id INTO var1
 
 INSERT INTO chat_members
 (chat_id, member_id, privilage)
 VALUES
-(?1, ?2, 255);
+(var1, 0, 255);
 
 -- create a channel max members is null as channels do not have a max
 INSERT INTO chats
