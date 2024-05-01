@@ -365,16 +365,19 @@ WHERE member_id=(
     OR COALESCE(username=:username, false)
 )
 ```
+![[Pasted image 20240430230117.png]]
 
 **e. For a given chat, retrieve its metadata (chat title, bio, join link (if applicable), etc.)**
 ```sql
 SELECT * FROM chats WHERE chat_id=:chat_id
 ```
+![[Pasted image 20240430230144.png]]
 
 **f. For a given chat, retrieve all its users.**
 ```sql
 SELECT member_id FROM chat_members WHERE chat_id=:chat_id
 ```
+![[Pasted image 20240430230214.png]]
 
 **g. For a given chat, retrieve all its online users.**
 ```sql
@@ -386,6 +389,7 @@ WHERE
   chat_id=:chat_id
   AND 1=(SELECT availability FROM users WHERE user_id=chat_members.member_id)
 ```
+![[Pasted image 20240430230334.png]]
 
 **h. For a given chat, retrieve its creator.**
 ```sql
@@ -396,6 +400,7 @@ FROM
 WHERE
   chat_id=:chat_id
 ```
+![[Pasted image 20240430230402.png]]
 
 **i. For a given chat, retrieve all its admins (including the creator).**
 ```sql
