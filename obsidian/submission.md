@@ -210,8 +210,8 @@ RETURNING chat_id;
 INSERT INTO chat_members
 	(chat_id, member_id, privilage)
 VALUES
-	(1, 1, 255),
-	(1, 2, 255);
+	(var1, 1, 255),
+	(var1, 2, 255);
 COMMIT;
 
 -- create group
