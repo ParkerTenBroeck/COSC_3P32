@@ -171,6 +171,29 @@ CREATE TABLE chat_members (
 ```
 
 ```sql
+-- insert some users
+INSERT INTO users
+	(phone_number, name, email, location, username, password)
+VALUES
+	('1231', 'ivy', 'ivy@gmail.com', 'ontario', 'ivytime', '123');
+
+INSERT INTO users
+	(phone_number, name, email, location, username, password)
+VALUES
+	('3212', 'parker', 'parker@brock.ca', 'ontario', 'heygrey', '123');
+
+--insert some messages
+INSERT INTO messages
+	(sender_id, chat_id, message, attachment_id, posted, reply_to)
+SELECT
+	:user_id, :chat_id, :message, :attachment_id, :posted, :reply_to
+WHERE 1=(
+	SELECT COUNT(*) FROM chat_members WHERE chat_id=:chat_id AND member_id=:user_id
+	AND 1=(SELECT COUNT(*) FROM chats WHERE chat_id=:chat_id AND sending_privilage<=privilage)
+) AND IFNULL(:chat_id=(
+	SELECT chat_id FROM messages WHERE reply_to=:reply_to
+), TRUE)
+
 
 ```
 
