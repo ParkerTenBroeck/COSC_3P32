@@ -1,8 +1,10 @@
-# COSC 3P32 Group Project
+<div style="margin: auto; text-align: center;">
+<h1>COSC 3P32 Group Project</h1>
+<p>Parker TenBroeck: 7376726, pt21zs</p>
+<p>Ivy Gifford: 7404775, ag21os</p>
+</div>
 
-Parker TenBroeck: 7376726, pt21zs
 
-Ivy Gifford: 7404775, ag21os
 <div style="page-break-after: always; visibility: hidden">
 \pagebreak
 </div>
